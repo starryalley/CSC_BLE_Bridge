@@ -24,13 +24,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.ParcelUuid;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.dsi.ant.plugins.antplus.pcc.AntPlusBikeCadencePcc;
 import com.dsi.ant.plugins.antplus.pcc.AntPlusBikeSpeedDistancePcc;
 import com.dsi.ant.plugins.antplus.pcc.defines.DeviceState;
 import com.dsi.ant.plugins.antplus.pcc.defines.EventFlag;
@@ -39,8 +40,6 @@ import com.dsi.ant.plugins.antplus.pccbase.AntPluginPcc;
 import com.dsi.ant.plugins.antplus.pccbase.PccReleaseHandle;
 
 import java.math.BigDecimal;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -49,29 +48,38 @@ import java.util.Set;
 public class CSCService extends Service {
     private static final String TAG = CSCService.class.getSimpleName();
     private static final int ONGOING_NOTIFICATION_ID = 9999;
-    private static final String CHANNEL_DEFAULT_IMPORTANCE = "bike_fan_speed_channel";
+    private static final String CHANNEL_DEFAULT_IMPORTANCE = "csc_ble_channel";
 
+    // Ant+ sensors
     AntPlusBikeSpeedDistancePcc bsdPcc = null;
     PccReleaseHandle<AntPlusBikeSpeedDistancePcc> bsdReleaseHandle = null;
+    AntPlusBikeCadencePcc bcPcc = null;
+    PccReleaseHandle<AntPlusBikeCadencePcc> bcReleaseHandle = null;
 
     // 700x23c circumference in meter
     private static final BigDecimal circumference = new BigDecimal(2.095);
     // m/s to km/h ratio
     private static final BigDecimal msToKmSRatio = new BigDecimal(3.6);
 
-    // bike speed threshhold
-    private static final float speedThreadLow = 10.0f;
-    private static final float speedThreadHigh = 24.0f;
-
     // bluetooth API
-    /* Bluetooth API */
     private BluetoothManager mBluetoothManager;
     private BluetoothGattServer mBluetoothGattServer;
     private BluetoothLeAdvertiser mBluetoothLeAdvertiser;
-    /* Collection of notification subscribers */
+    // notification subscribers
     private Set<BluetoothDevice> mRegisteredDevices = new HashSet<>();
 
-    private AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeSpeedDistancePcc> mResultReceiver = new AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeSpeedDistancePcc>() {
+    // last wheel and crank (speed/cadence) information to send to CSCProfile
+    private long cumulativeWheelRevolution = 0;
+    private long cumulativeCrankRevolution = 0;
+    private int lastWheelEventTime = 0;
+    private int lastCrankEventTime = 0;
+
+    private long lastSpeedTimestamp = 0;
+    private long lastCadenceTimestamp = 0;
+    private float lastSpeed = 0;
+    private int lastCadence = 0;
+
+    private AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeSpeedDistancePcc> mBSDResultReceiver = new AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeSpeedDistancePcc>() {
         @Override
         public void onResultReceived(AntPlusBikeSpeedDistancePcc result,
                                      RequestAccessResult resultCode, DeviceState initialDeviceState) {
@@ -81,13 +89,13 @@ public class CSCService extends Service {
                     Log.d(TAG, result.getDeviceName() + ": " + initialDeviceState);
                     // send broadcast
                     Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
-                    i.putExtra("service_status", initialDeviceState.toString());
+                    i.putExtra("bsd_service_status", initialDeviceState.toString());
                     sendBroadcast(i);
 
                     subscribeToEvents();
                     break;
                 default:
-                    Log.e(TAG,  " error:" + initialDeviceState + ", resultCode" + resultCode);
+                    Log.e(TAG,  "BSD error:" + initialDeviceState + ", resultCode" + resultCode);
             }
         }
 
@@ -98,15 +106,8 @@ public class CSCService extends Service {
                                                  final EnumSet<EventFlag> eventFlags, final BigDecimal calculatedSpeed) {
                     // convert m/s to km/h
                     float speed = calculatedSpeed.multiply(msToKmSRatio).floatValue();
-                    Log.v(TAG, "Speed:" + speed);
-                    // update fan speed according to this speed
-                    //new FanSpeedTask().execute(speed);
-
-                    // send broadcast
-                    Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
-                    i.putExtra("speed", speed);
-                    i.putExtra("timestamp", estTimestamp);
-                    sendBroadcast(i);
+                    //Log.v(TAG, "Speed:" + speed);
+                    lastSpeed = speed;
                 }
             });
 
@@ -117,32 +118,99 @@ public class CSCService extends Service {
                     //eventFlags - Informational flags about the event.
                     //timestampOfLastEvent - Sensor reported time counter value of last distance or speed computation (up to 1/200s accuracy). Units: s. Rollover: Every ~46 quadrillion s (~1.5 billion years).
                     //cumulativeRevolutions - Total number of revolutions since the sensor was first connected. Note: If the subscriber is not the first PCC connected to the device the accumulation will probably already be at a value greater than 0 and the subscriber should save the first received value as a relative zero for itself. Units: revolutions. Rollover: Every ~9 quintillion revolutions.
-                    Log.v(TAG, "=> Cumulative revolution:" + cumulativeRevolutions + ", lastEventTime:" + timestampOfLastEvent);
-                    notifyRegisteredDevices(cumulativeRevolutions, timestampOfLastEvent.doubleValue());
+                    Log.v(TAG, "=> BSD: Cumulative revolution:" + cumulativeRevolutions + ", lastEventTime:" + timestampOfLastEvent);
+                    cumulativeWheelRevolution = cumulativeRevolutions;
+                    lastWheelEventTime = (int)(timestampOfLastEvent.doubleValue()*1024.0);
+                    lastSpeedTimestamp = estTimestamp;
                 }
             });
 
         }
     };
 
-    // Receives state changes and shows it on the status display line
-    private AntPluginPcc.IDeviceStateChangeReceiver mDeviceStateChangeReceiver = new AntPluginPcc.IDeviceStateChangeReceiver() {
+    private AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeCadencePcc> mBCResultReceiver = new AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeCadencePcc>() {
+        // Handle the result, connecting to events on success or reporting
+        // failure to user.
+        @Override
+        public void onResultReceived(AntPlusBikeCadencePcc result,
+                                     RequestAccessResult resultCode, DeviceState initialDeviceState) {
+            switch (resultCode) {
+                case SUCCESS:
+                    bcPcc = result;
+                    Log.d(TAG, result.getDeviceName() + ": " + initialDeviceState);
+                    // send broadcast
+                    Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
+                    i.putExtra("bc_service_status", initialDeviceState.toString());
+                    sendBroadcast(i);
+
+                    subscribeToEvents();
+                    break;
+
+                default:
+                    Log.e(TAG,  "BC error:" + initialDeviceState + ", resultCode" + resultCode);
+            }
+        }
+
+        private void subscribeToEvents() {
+            bcPcc.subscribeCalculatedCadenceEvent(new AntPlusBikeCadencePcc.ICalculatedCadenceReceiver() {
+                @Override
+                public void onNewCalculatedCadence(final long estTimestamp,
+                                                   final EnumSet<EventFlag> eventFlags, final BigDecimal calculatedCadence) {
+
+                    //Log.v(TAG, "Cadence:" + calculatedCadence.intValue());
+                    lastCadence = calculatedCadence.intValue();
+                }
+            });
+
+            bcPcc.subscribeRawCadenceDataEvent(new AntPlusBikeCadencePcc.IRawCadenceDataReceiver() {
+                @Override
+                public void onNewRawCadenceData(final long estTimestamp,
+                                                final EnumSet<EventFlag> eventFlags, final BigDecimal timestampOfLastEvent,
+                                                final long cumulativeRevolutions) {
+                    Log.v(TAG, "=> BC: Cumulative revolution:" + cumulativeRevolutions + ", lastEventTime:" + timestampOfLastEvent);
+                    cumulativeCrankRevolution = cumulativeRevolutions;
+                    lastCrankEventTime = (int)(timestampOfLastEvent.doubleValue()*1024.0);
+                    lastCadenceTimestamp = estTimestamp;
+                }
+            });
+        }
+    };
+
+    enum AntSensorType {
+        CyclingSpeed,
+        CyclingCadence
+    }
+    class AntDeviceChangeReceiver implements AntPluginPcc.IDeviceStateChangeReceiver {
+        private AntSensorType type;
+        public AntDeviceChangeReceiver(AntSensorType type) {
+            this.type = type;
+        }
         @Override
         public void onDeviceStateChange(final DeviceState newDeviceState) {
-            Log.d(TAG, bsdPcc.getDeviceName() + " onDeviceStateChange:" + newDeviceState);
+            String extraName = "unknown";
+            if (type == AntSensorType.CyclingSpeed) {
+                extraName = "bsd_service_status";
+                Log.d(TAG, "Speed sensor onDeviceStateChange:" + newDeviceState);
+            } else if (type == AntSensorType.CyclingCadence) {
+                extraName = "bc_service_status";
+                Log.d(TAG, "Cadence sensor onDeviceStateChange:" + newDeviceState);
+            }
             // send broadcast
             Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
-            i.putExtra("service_status", newDeviceState.name());
+            i.putExtra(extraName, newDeviceState.name());
             sendBroadcast(i);
 
             // if the device is dead (closed)
             if (newDeviceState == DeviceState.DEAD) {
                 bsdPcc = null;
-                // stop fan
-                //new FanSpeedTask().execute(0f);
+
             }
         }
     };
+
+    // Receives state changes and shows it on the status display line
+    private AntPluginPcc.IDeviceStateChangeReceiver mBSDDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.CyclingSpeed);
+    private AntPluginPcc.IDeviceStateChangeReceiver mBCDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.CyclingCadence);
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -229,11 +297,11 @@ public class CSCService extends Service {
         // build a notification
         Notification notification =
                 new Notification.Builder(this, CHANNEL_DEFAULT_IMPORTANCE)
-                        .setContentTitle("Bike FanSpeed control")
+                        .setContentTitle(getText(R.string.app_name))
                         .setContentText("Active")
                         //.setSmallIcon(R.drawable.icon)
                         .setContentIntent(pendingIntent)
-                        .setTicker("Bike FanSpeed")
+                        .setTicker(getText(R.string.app_name))
                         .build();
         // start this service as a foreground one
         startForeground(ONGOING_NOTIFICATION_ID, notification);
@@ -252,6 +320,9 @@ public class CSCService extends Service {
         super.onDestroy();
         if(bsdReleaseHandle != null)
             bsdReleaseHandle.close();
+
+        if (bcReleaseHandle != null)
+            bcReleaseHandle.close();
 
         BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
         if (bluetoothAdapter.isEnabled()) {
@@ -322,8 +393,8 @@ public class CSCService extends Service {
             return;
         }
 
-        // enable speed sensor only (TODO: enable cadence)
-        CSCProfile.setFeature(CSCProfile.CSC_FEATURE_WHEEL_REV);
+        // TODO: enable either 1 of them or both of them according to user selection
+        CSCProfile.setFeature((byte)(CSCProfile.CSC_FEATURE_WHEEL_REV | CSCProfile.CSC_FEATURE_CRANK_REV));
         mBluetoothGattServer.addService(CSCProfile.createCSCService());
         Log.d(TAG, "CSCP enabled!");
     }
@@ -353,17 +424,37 @@ public class CSCService extends Service {
         }
     };
 
+    Handler handler = new Handler();
+    private Runnable periodicUpdate = new Runnable () {
+        @Override
+        public void run() {
+            // scheduled next run in 1 sec
+            handler.postDelayed(periodicUpdate, 1000);
+
+            notifyRegisteredDevices();
+            // update UI by sending broadcast to our main activity
+            Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
+            i.putExtra("speed", lastSpeed);
+            i.putExtra("cadence", lastCadence);
+            i.putExtra("speed_timestamp", lastSpeedTimestamp);
+            i.putExtra("cadence_timestamp", lastCadenceTimestamp);
+            Log.d(TAG, "Updating UI: speed:" + lastSpeed + ", cadence:" + lastCadence + ", speed_ts:" + lastSpeedTimestamp + ", cadence_ts:" + lastCadenceTimestamp);
+            sendBroadcast(i);
+        }
+    };
+
     /**
      * Send a CSC service notification to any devices that are subscribed
      * to the characteristic.
      */
-    private void notifyRegisteredDevices(long cumulativeRevolutions, double timestampOfLastEvent) {
+    private void notifyRegisteredDevices() {
         if (mRegisteredDevices.isEmpty()) {
             Log.v(TAG, "No subscribers registered");
             return;
         }
 
-        byte[] data = CSCProfile.getMeasurement(cumulativeRevolutions, (int)(timestampOfLastEvent*1024.0));
+        byte[] data = CSCProfile.getMeasurement(cumulativeWheelRevolution, lastWheelEventTime,
+                                                cumulativeCrankRevolution, lastCrankEventTime);
 
         Log.v(TAG, "Sending update to " + mRegisteredDevices.size() + " subscribers");
         for (BluetoothDevice device : mRegisteredDevices) {
@@ -388,6 +479,8 @@ public class CSCService extends Service {
         public void onServiceAdded(int status, BluetoothGattService service) {
             Log.i(TAG, "onServiceAdded(): status:" + status + ", service:" + service);
             //startAdvertising();//TODO: check if this is correct
+            // start sending notification to subscribed device
+            handler.post(periodicUpdate);
         }
 
         @Override
@@ -442,7 +535,6 @@ public class CSCService extends Service {
             }
         }
 
-        // TODO: check spec to see if this is correct
         @Override
         public void onDescriptorReadRequest(BluetoothDevice device, int requestId, int offset,
                                             BluetoothGattDescriptor descriptor) {
@@ -511,7 +603,10 @@ public class CSCService extends Service {
         Log.d(TAG, "requesting ANT+ access");
         // starts speed sensor search
         bsdReleaseHandle = AntPlusBikeSpeedDistancePcc.requestAccess(this, 0, 0, false,
-                mResultReceiver, mDeviceStateChangeReceiver);
+                mBSDResultReceiver, mBSDDeviceStateChangeReceiver);
+        // starts cadence sensor search
+        bcReleaseHandle = AntPlusBikeCadencePcc.requestAccess(this, 0, 0, false,
+                mBCResultReceiver, mBCDeviceStateChangeReceiver);
     }
 
     @Nullable

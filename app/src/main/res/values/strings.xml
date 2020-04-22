@@ -5,7 +5,8 @@
     <string name="please_start">Please Start Service</string>
     <string name="no_data">---</string>
     <string name="current_speed">Current Speed (km/h)</string>
-    <string name="speed_sensor">Bike Speed Sensor</string>
-    <string name="timestamp">Sensor TimeStamp</string>
+    <string name="speed_sensor">Speed Sensor</string>
+    <string name="cadence_sensor">Cadence Sensor</string>
+    <string name="timestamp">TimeStamp</string>
     <string name="cadence">Current Cadence (rpm)</string>
 </resources>
