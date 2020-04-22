@@ -51,10 +51,10 @@ public class CSCService extends Service {
     private static final String CHANNEL_DEFAULT_IMPORTANCE = "csc_ble_channel";
 
     // Ant+ sensors
-    AntPlusBikeSpeedDistancePcc bsdPcc = null;
-    PccReleaseHandle<AntPlusBikeSpeedDistancePcc> bsdReleaseHandle = null;
-    AntPlusBikeCadencePcc bcPcc = null;
-    PccReleaseHandle<AntPlusBikeCadencePcc> bcReleaseHandle = null;
+    private AntPlusBikeSpeedDistancePcc bsdPcc = null;
+    private PccReleaseHandle<AntPlusBikeSpeedDistancePcc> bsdReleaseHandle = null;
+    private AntPlusBikeCadencePcc bcPcc = null;
+    private PccReleaseHandle<AntPlusBikeCadencePcc> bcReleaseHandle = null;
 
     // 700x23c circumference in meter
     private static final BigDecimal circumference = new BigDecimal(2.095);
@@ -74,6 +74,7 @@ public class CSCService extends Service {
     private int lastWheelEventTime = 0;
     private int lastCrankEventTime = 0;
 
+    // for UI updates
     private long lastSpeedTimestamp = 0;
     private long lastCadenceTimestamp = 0;
     private float lastSpeed = 0;
@@ -83,20 +84,19 @@ public class CSCService extends Service {
         @Override
         public void onResultReceived(AntPlusBikeSpeedDistancePcc result,
                                      RequestAccessResult resultCode, DeviceState initialDeviceState) {
-            switch (resultCode) {
-                case SUCCESS:
-                    bsdPcc = result;
-                    Log.d(TAG, result.getDeviceName() + ": " + initialDeviceState);
-                    // send broadcast
-                    Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
-                    i.putExtra("bsd_service_status", initialDeviceState.toString());
-                    sendBroadcast(i);
-
-                    subscribeToEvents();
-                    break;
-                default:
-                    Log.e(TAG,  "BSD error:" + initialDeviceState + ", resultCode" + resultCode);
+            if (resultCode == RequestAccessResult.SUCCESS) {
+                bsdPcc = result;
+                Log.d(TAG, result.getDeviceName() + ": " + initialDeviceState);
+                subscribeToEvents();
+            } else if (resultCode == RequestAccessResult.USER_CANCELLED) {
+                Log.d(TAG, "BSD Closed:" + resultCode);
+            } else {
+                Log.w(TAG, "BSD state changed:" + initialDeviceState + ", resultCode:" + resultCode);
             }
+            // send broadcast
+            Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
+            i.putExtra("bsd_service_status", initialDeviceState.toString());
+            sendBroadcast(i);
         }
 
         private void subscribeToEvents() {
@@ -105,9 +105,8 @@ public class CSCService extends Service {
                 public void onNewCalculatedSpeed(final long estTimestamp,
                                                  final EnumSet<EventFlag> eventFlags, final BigDecimal calculatedSpeed) {
                     // convert m/s to km/h
-                    float speed = calculatedSpeed.multiply(msToKmSRatio).floatValue();
-                    //Log.v(TAG, "Speed:" + speed);
-                    lastSpeed = speed;
+                    lastSpeed = calculatedSpeed.multiply(msToKmSRatio).floatValue();
+                    //Log.v(TAG, "Speed:" + lastSpeed);
                 }
             });
 
@@ -134,21 +133,19 @@ public class CSCService extends Service {
         @Override
         public void onResultReceived(AntPlusBikeCadencePcc result,
                                      RequestAccessResult resultCode, DeviceState initialDeviceState) {
-            switch (resultCode) {
-                case SUCCESS:
-                    bcPcc = result;
-                    Log.d(TAG, result.getDeviceName() + ": " + initialDeviceState);
-                    // send broadcast
-                    Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
-                    i.putExtra("bc_service_status", initialDeviceState.toString());
-                    sendBroadcast(i);
-
-                    subscribeToEvents();
-                    break;
-
-                default:
-                    Log.e(TAG,  "BC error:" + initialDeviceState + ", resultCode" + resultCode);
+            if (resultCode == RequestAccessResult.SUCCESS) {
+                bcPcc = result;
+                Log.d(TAG, result.getDeviceName() + ": " + initialDeviceState);
+                subscribeToEvents();
+            } else if (resultCode == RequestAccessResult.USER_CANCELLED) {
+                Log.d(TAG, "BC Closed:" + resultCode);
+            } else {
+                Log.w(TAG, "BC state changed:" + initialDeviceState + ", resultCode:" + resultCode);
             }
+            // send broadcast
+            Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
+            i.putExtra("bc_service_status", initialDeviceState.toString());
+            sendBroadcast(i);
         }
 
         private void subscribeToEvents() {
@@ -176,13 +173,14 @@ public class CSCService extends Service {
         }
     };
 
-    enum AntSensorType {
+    private enum AntSensorType {
         CyclingSpeed,
         CyclingCadence
     }
-    class AntDeviceChangeReceiver implements AntPluginPcc.IDeviceStateChangeReceiver {
+
+    private class AntDeviceChangeReceiver implements AntPluginPcc.IDeviceStateChangeReceiver {
         private AntSensorType type;
-        public AntDeviceChangeReceiver(AntSensorType type) {
+        AntDeviceChangeReceiver(AntSensorType type) {
             this.type = type;
         }
         @Override
@@ -195,7 +193,7 @@ public class CSCService extends Service {
                 extraName = "bc_service_status";
                 Log.d(TAG, "Cadence sensor onDeviceStateChange:" + newDeviceState);
             }
-            // send broadcast
+            // send broadcast about device status
             Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
             i.putExtra(extraName, newDeviceState.name());
             sendBroadcast(i);
@@ -203,20 +201,17 @@ public class CSCService extends Service {
             // if the device is dead (closed)
             if (newDeviceState == DeviceState.DEAD) {
                 bsdPcc = null;
-
             }
         }
     };
 
-    // Receives state changes and shows it on the status display line
     private AntPluginPcc.IDeviceStateChangeReceiver mBSDDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.CyclingSpeed);
     private AntPluginPcc.IDeviceStateChangeReceiver mBCDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.CyclingCadence);
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        //TODO do something useful
         Log.d(TAG, "Service onStartCommand");
-        return Service.START_STICKY;
+        return Service.START_NOT_STICKY;
     }
 
     private boolean checkBluetoothSupport(BluetoothAdapter bluetoothAdapter) {
@@ -228,7 +223,6 @@ public class CSCService extends Service {
             Log.w(TAG, "Bluetooth LE is not supported");
             return false;
         }
-
         return true;
     }
 
@@ -236,7 +230,6 @@ public class CSCService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.STATE_OFF);
-
             switch (state) {
                 case BluetoothAdapter.STATE_ON:
                     startAdvertising();
@@ -246,10 +239,7 @@ public class CSCService extends Service {
                     stopServer();
                     stopAdvertising();
                     break;
-                default:
-                    // Do nothing
             }
-
         }
     };
 
@@ -258,30 +248,7 @@ public class CSCService extends Service {
         Log.d(TAG, "Service started");
         super.onCreate();
 
-        initAntPlus();
-
-
-        // bluetooth
-        mBluetoothManager = (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
-        BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
-        // We can't continue without proper Bluetooth support
-        if (!checkBluetoothSupport(bluetoothAdapter)) {
-            return;
-        }
-
-        // Register for system Bluetooth events
-        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-        registerReceiver(mBluetoothReceiver, filter);
-        if (!bluetoothAdapter.isEnabled()) {
-            Log.d(TAG, "Bluetooth is currently disabled...enabling");
-            bluetoothAdapter.enable();
-        } else {
-            Log.d(TAG, "Bluetooth enabled...starting services");
-            startAdvertising();
-            startServer();
-        }
-
-        // for foreground service
+        // start foreground service early
 
         Intent notificationIntent = new Intent(this, CSCService.class);
         PendingIntent pendingIntent =
@@ -305,12 +272,38 @@ public class CSCService extends Service {
                         .build();
         // start this service as a foreground one
         startForeground(ONGOING_NOTIFICATION_ID, notification);
+
+        // ANT+
+        initAntPlus();
+
+        // Bluetooth LE
+        mBluetoothManager = (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
+        BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
+        // continue without proper Bluetooth support
+        if (!checkBluetoothSupport(bluetoothAdapter)) {
+            Log.e(TAG, "Bluetooth LE isn't supported. This won't run");
+            stopSelf();
+            return;
+        }
+
+        // Register for system Bluetooth events
+        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        registerReceiver(mBluetoothReceiver, filter);
+        if (!bluetoothAdapter.isEnabled()) {
+            Log.d(TAG, "Bluetooth is currently disabled...enabling");
+            bluetoothAdapter.enable();
+        } else {
+            Log.d(TAG, "Bluetooth enabled...starting services");
+            startAdvertising();
+            startServer();
+        }
     }
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
         Log.d(TAG, "onTaskRemoved called");
         super.onTaskRemoved(rootIntent);
+        stopForeground(true);
         stopSelf();
     }
 
@@ -318,12 +311,8 @@ public class CSCService extends Service {
     public void onDestroy() {
         Log.d(TAG, "Service destroyed");
         super.onDestroy();
-        if(bsdReleaseHandle != null)
-            bsdReleaseHandle.close();
 
-        if (bcReleaseHandle != null)
-            bcReleaseHandle.close();
-
+        // stop BLE
         BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
         if (bluetoothAdapter.isEnabled()) {
             stopServer();
@@ -331,16 +320,22 @@ public class CSCService extends Service {
         }
 
         unregisterReceiver(mBluetoothReceiver);
+
+        // stop ANT+
+        if(bsdReleaseHandle != null)
+            bsdReleaseHandle.close();
+
+        if (bcReleaseHandle != null)
+            bcReleaseHandle.close();
     }
 
 
     /**
      * Begin advertising over Bluetooth that this device is connectable
-     * and supports the Current Time Service.
      */
     private void startAdvertising() {
         BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
-        Log.i(TAG, "isLe2MPhySupported:" + bluetoothAdapter.isLe2MPhySupported() + ",isMultipleAdvertisementSupported:" + bluetoothAdapter.isMultipleAdvertisementSupported() +
+        Log.d(TAG, "isLe2MPhySupported:" + bluetoothAdapter.isLe2MPhySupported() + ",isMultipleAdvertisementSupported:" + bluetoothAdapter.isMultipleAdvertisementSupported() +
                 ",isLeCodedPhySupported:" + bluetoothAdapter.isLeCodedPhySupported() + ",isLeExtendedAdvertisingSupported:" + bluetoothAdapter.isLeExtendedAdvertisingSupported() +
                 ",isLePeriodicAdvertisingSupported:" + bluetoothAdapter.isLePeriodicAdvertisingSupported() + ",address:" + bluetoothAdapter.getAddress());
         mBluetoothLeAdvertiser = bluetoothAdapter.getBluetoothLeAdvertiser();
@@ -363,18 +358,12 @@ public class CSCService extends Service {
                 .addServiceUuid(new ParcelUuid(CSCProfile.CSC_SERVICE))
                 .build();
 
-//        AdvertiseData scanResponseData = new AdvertiseData.Builder()
-//                .addServiceUuid(new ParcelUuid(CSCProfile.CSC_SERVICE))
-//                .setIncludeTxPowerLevel(false)
-//                .build();
-
         mBluetoothLeAdvertiser
                 .startAdvertising(settings, data, mAdvertiseCallback);
-                //.startAdvertising(settings, data, scanResponseData, mAdvertiseCallback);
     }
 
     /**
-     * Stop Bluetooth advertisements.
+     * Stop Bluetooth advertisements
      */
     private void stopAdvertising() {
         if (mBluetoothLeAdvertiser == null) return;
@@ -383,8 +372,7 @@ public class CSCService extends Service {
     }
 
     /**
-     * Initialize the GATT server instance with the services/characteristics
-     * from the Time Profile.
+     * Initialize the GATT server
      */
     private void startServer() {
         mBluetoothGattServer = mBluetoothManager.openGattServer(this, mGattServerCallback);
@@ -397,19 +385,24 @@ public class CSCService extends Service {
         CSCProfile.setFeature((byte)(CSCProfile.CSC_FEATURE_WHEEL_REV | CSCProfile.CSC_FEATURE_CRANK_REV));
         mBluetoothGattServer.addService(CSCProfile.createCSCService());
         Log.d(TAG, "CSCP enabled!");
+
+        // start periodicUpdate, sending notification to subscribed device and UI
+        handler.post(periodicUpdate);
     }
 
     /**
-     * Shut down the GATT server.
+     * Shut down the GATT server
      */
     private void stopServer() {
         if (mBluetoothGattServer == null) return;
 
+        // stop periodicUpdate
+        handler.removeCallbacksAndMessages(null);
         mBluetoothGattServer.close();
     }
 
     /**
-     * Callback to receive information about the advertisement process.
+     * Callback to receive information about the advertisement process
      */
     private AdvertiseCallback mAdvertiseCallback = new AdvertiseCallback() {
 
@@ -431,21 +424,23 @@ public class CSCService extends Service {
             // scheduled next run in 1 sec
             handler.postDelayed(periodicUpdate, 1000);
 
+            // send to registered BLE devices. It's a no-op if there is no GATT client
             notifyRegisteredDevices();
+
             // update UI by sending broadcast to our main activity
             Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
             i.putExtra("speed", lastSpeed);
             i.putExtra("cadence", lastCadence);
             i.putExtra("speed_timestamp", lastSpeedTimestamp);
             i.putExtra("cadence_timestamp", lastCadenceTimestamp);
-            Log.d(TAG, "Updating UI: speed:" + lastSpeed + ", cadence:" + lastCadence + ", speed_ts:" + lastSpeedTimestamp + ", cadence_ts:" + lastCadenceTimestamp);
+            Log.v(TAG, "Updating UI: speed:" + lastSpeed + ", cadence:" + lastCadence + ", speed_ts:" + lastSpeedTimestamp + ", cadence_ts:" + lastCadenceTimestamp);
             sendBroadcast(i);
         }
     };
 
     /**
      * Send a CSC service notification to any devices that are subscribed
-     * to the characteristic.
+     * to the characteristic
      */
     private void notifyRegisteredDevices() {
         if (mRegisteredDevices.isEmpty()) {
@@ -469,18 +464,12 @@ public class CSCService extends Service {
         }
     }
 
-    /**
-     * Callback to handle incoming requests to the GATT server.
-     * All read/write requests for characteristics and descriptors are handled here.
-     */
     private BluetoothGattServerCallback mGattServerCallback = new BluetoothGattServerCallback() {
 
         @Override
         public void onServiceAdded(int status, BluetoothGattService service) {
             Log.i(TAG, "onServiceAdded(): status:" + status + ", service:" + service);
-            //startAdvertising();//TODO: check if this is correct
-            // start sending notification to subscribed device
-            handler.post(periodicUpdate);
+            // do nothing here
         }
 
         @Override
@@ -597,8 +586,10 @@ public class CSCService extends Service {
 
     private void initAntPlus() {
         //Release the old access if it exists
-        if(bsdReleaseHandle != null)
+        if (bsdReleaseHandle != null)
             bsdReleaseHandle.close();
+        if (bcReleaseHandle != null)
+            bcReleaseHandle.close();
 
         Log.d(TAG, "requesting ANT+ access");
         // starts speed sensor search
@@ -607,6 +598,12 @@ public class CSCService extends Service {
         // starts cadence sensor search
         bcReleaseHandle = AntPlusBikeCadencePcc.requestAccess(this, 0, 0, false,
                 mBCResultReceiver, mBCDeviceStateChangeReceiver);
+
+        // send initial state for UI
+        Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
+        i.putExtra("bsd_service_status", "SEARCHING");
+        i.putExtra("bc_service_status", "SEARCHING");
+        sendBroadcast(i);
     }
 
     @Nullable

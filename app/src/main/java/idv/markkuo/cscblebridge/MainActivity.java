@@ -38,6 +38,11 @@ public class MainActivity extends AppCompatActivity {
         tv_cadence = (TextView)findViewById(R.id.CadenceText);
         btn_service = (Button)findViewById(R.id.ServiceButton);
 
+        if (isServiceRunning(CSCService.class)) {
+            Log.w(TAG, "Service already started");
+            serviceStarted = true;
+        }
+
         btn_service.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
