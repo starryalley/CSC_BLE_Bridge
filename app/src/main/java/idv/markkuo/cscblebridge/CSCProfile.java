@@ -5,7 +5,6 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.util.Log;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -80,15 +79,14 @@ public class CSCProfile {
         data.add((byte) (currentFeature & 0x3)); // only preserve bit 0 and 1
         if ((currentFeature & CSC_FEATURE_WHEEL_REV) == CSC_FEATURE_WHEEL_REV) {
             // cumulative wheel revolutions (uint32)
-            byte[] bytesCWR = new byte[8];
-            ByteBuffer.wrap(bytesCWR).putLong(cumulativeRevolution);
-            for(int i = 4; i < 8; i++)
-                data.add(bytesCWR[i]);
-            // Last Wheel Event Time (uint16)  unit is 1/1024s
-            byte[] bytesLWET = new byte[4];
-            ByteBuffer.wrap(bytesLWET).putInt(lastWheelEventTime);
-            for (int i = 2; i < 4; i++)
-                data.add(bytesLWET[i]);
+            data.add((byte) cumulativeRevolution);
+            data.add((byte) (cumulativeRevolution >> Byte.SIZE));
+            data.add((byte) (cumulativeRevolution >> Byte.SIZE * 2));
+            data.add((byte) (cumulativeRevolution >> Byte.SIZE * 3));
+
+            // Last Wheel Event Time (uint16),  unit is 1/1024s
+            data.add((byte) lastWheelEventTime);
+            data.add((byte) (lastWheelEventTime >> Byte.SIZE));
         }
         if ((currentFeature & CSC_FEATURE_CRANK_REV) == CSC_FEATURE_CRANK_REV) {
             Log.wtf(TAG, "This isn't implemented yet");
@@ -103,14 +101,25 @@ public class CSCProfile {
         for (int i = 0; i < data.size(); i++) {
             byteArray[i] = data.get(i);
         }
-
+        Log.v(TAG, "CSC Measurement: 0x" + bytesToHex(byteArray));
         return byteArray;
+    }
+
+    private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
+    private static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for ( int j = 0; j < bytes.length; j++ ) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 
     // https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.csc_feature.xml
     public static byte[] getFeature() {
         byte[] data = new byte[2];
-        data[0] = CSC_FEATURE_WHEEL_REV | CSC_FEATURE_CRANK_REV;
+        data[0] = currentFeature;
         data[1] = 0;
         return data;
     }

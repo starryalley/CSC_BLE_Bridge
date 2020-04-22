@@ -171,7 +171,7 @@ public class CSCService extends Service {
 
             switch (state) {
                 case BluetoothAdapter.STATE_ON:
-                    //startAdvertising();
+                    startAdvertising();
                     startServer();
                     break;
                 case BluetoothAdapter.STATE_OFF:
@@ -209,7 +209,7 @@ public class CSCService extends Service {
             bluetoothAdapter.enable();
         } else {
             Log.d(TAG, "Bluetooth enabled...starting services");
-            //startAdvertising();
+            startAdvertising();
             startServer();
         }
 
@@ -269,6 +269,9 @@ public class CSCService extends Service {
      */
     private void startAdvertising() {
         BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
+        Log.i(TAG, "isLe2MPhySupported:" + bluetoothAdapter.isLe2MPhySupported() + ",isMultipleAdvertisementSupported:" + bluetoothAdapter.isMultipleAdvertisementSupported() +
+                ",isLeCodedPhySupported:" + bluetoothAdapter.isLeCodedPhySupported() + ",isLeExtendedAdvertisingSupported:" + bluetoothAdapter.isLeExtendedAdvertisingSupported() +
+                ",isLePeriodicAdvertisingSupported:" + bluetoothAdapter.isLePeriodicAdvertisingSupported() + ",address:" + bluetoothAdapter.getAddress());
         mBluetoothLeAdvertiser = bluetoothAdapter.getBluetoothLeAdvertiser();
         if (mBluetoothLeAdvertiser == null) {
             Log.w(TAG, "Failed to create advertiser");
@@ -285,11 +288,18 @@ public class CSCService extends Service {
         AdvertiseData data = new AdvertiseData.Builder()
                 .setIncludeDeviceName(true)
                 .setIncludeTxPowerLevel(false)
+                //.addServiceData()
                 .addServiceUuid(new ParcelUuid(CSCProfile.CSC_SERVICE))
                 .build();
 
+//        AdvertiseData scanResponseData = new AdvertiseData.Builder()
+//                .addServiceUuid(new ParcelUuid(CSCProfile.CSC_SERVICE))
+//                .setIncludeTxPowerLevel(false)
+//                .build();
+
         mBluetoothLeAdvertiser
                 .startAdvertising(settings, data, mAdvertiseCallback);
+                //.startAdvertising(settings, data, scanResponseData, mAdvertiseCallback);
     }
 
     /**
@@ -331,9 +341,10 @@ public class CSCService extends Service {
      * Callback to receive information about the advertisement process.
      */
     private AdvertiseCallback mAdvertiseCallback = new AdvertiseCallback() {
+
         @Override
         public void onStartSuccess(AdvertiseSettings settingsInEffect) {
-            Log.i(TAG, "LE Advertise Started.");
+            Log.i(TAG, "LE Advertise Started:" + settingsInEffect);
         }
 
         @Override
@@ -352,14 +363,17 @@ public class CSCService extends Service {
             return;
         }
 
-        byte[] data = CSCProfile.getMeasurement(cumulativeRevolutions, (int)(timestampOfLastEvent/1024));
+        byte[] data = CSCProfile.getMeasurement(cumulativeRevolutions, (int)(timestampOfLastEvent*1024.0));
 
-        Log.i(TAG, "Sending update to " + mRegisteredDevices.size() + " subscribers");
+        Log.v(TAG, "Sending update to " + mRegisteredDevices.size() + " subscribers");
         for (BluetoothDevice device : mRegisteredDevices) {
             BluetoothGattCharacteristic measurementCharacteristic = mBluetoothGattServer
                     .getService(CSCProfile.CSC_SERVICE)
                     .getCharacteristic(CSCProfile.CSC_MEASUREMENT);
-            measurementCharacteristic.setValue(data);
+            if (!measurementCharacteristic.setValue(data)) {
+                Log.w(TAG, "CSC Measurement data isn't set properly!");
+            }
+            // false is used to send a notification
             mBluetoothGattServer.notifyCharacteristicChanged(device, measurementCharacteristic, false);
         }
     }
@@ -372,9 +386,8 @@ public class CSCService extends Service {
 
         @Override
         public void onServiceAdded(int status, BluetoothGattService service) {
-            super.onServiceAdded(status, service);
             Log.i(TAG, "onServiceAdded(): status:" + status + ", service:" + service);
-            startAdvertising();//TODO: check if this is correct
+            //startAdvertising();//TODO: check if this is correct
         }
 
         @Override
@@ -387,6 +400,16 @@ public class CSCService extends Service {
                 //Remove device from any active subscriptions
                 mRegisteredDevices.remove(device);
             }
+        }
+
+        @Override
+        public void onNotificationSent(BluetoothDevice device, int status) {
+            Log.v(TAG, "onNotificationSent() result:" + status);
+        }
+
+        @Override
+        public void onMtuChanged(BluetoothDevice device, int mtu) {
+            Log.d(TAG, "onMtuChanged:" + device + " =>" + mtu);
         }
 
         @Override
@@ -433,15 +456,15 @@ public class CSCService extends Service {
                 }
                 mBluetoothGattServer.sendResponse(device,
                         requestId,
-                        BluetoothGatt.GATT_FAILURE,
-                        0,
+                        BluetoothGatt.GATT_SUCCESS,
+                        offset,
                         returnValue);
             } else {
                 Log.w(TAG, "Unknown descriptor read request");
                 mBluetoothGattServer.sendResponse(device,
                         requestId,
                         BluetoothGatt.GATT_FAILURE,
-                        0,
+                        offset,
                         null);
             }
         }
