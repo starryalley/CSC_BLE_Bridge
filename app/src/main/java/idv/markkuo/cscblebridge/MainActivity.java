@@ -77,8 +77,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void resetUi() {
-        tv_speedSensorState.setText(getText(R.string.please_start));
-        tv_cadenceSensorState.setText(getText(R.string.please_start));
+        tv_speedSensorState.setText(getText(R.string.no_data));
+        tv_cadenceSensorState.setText(getText(R.string.no_data));
         tv_speedSensorTimestamp.setText(getText(R.string.no_data));
         tv_cadenceSensorTimestamp.setText(getText(R.string.no_data));
         tv_speed.setText(getText(R.string.no_data));

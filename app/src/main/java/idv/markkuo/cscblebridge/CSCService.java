@@ -382,8 +382,7 @@ public class CSCService extends Service {
         }
 
         // TODO: enable either 1 of them or both of them according to user selection
-        CSCProfile.setFeature((byte)(CSCProfile.CSC_FEATURE_WHEEL_REV | CSCProfile.CSC_FEATURE_CRANK_REV));
-        mBluetoothGattServer.addService(CSCProfile.createCSCService());
+        mBluetoothGattServer.addService(CSCProfile.createCSCService((byte)(CSCProfile.CSC_FEATURE_WHEEL_REV | CSCProfile.CSC_FEATURE_CRANK_REV)));
         Log.d(TAG, "CSCP enabled!");
 
         // start periodicUpdate, sending notification to subscribed device and UI

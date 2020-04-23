@@ -46,7 +46,10 @@ public class CSCProfile {
      * Return a configured {@link BluetoothGattService} instance for the
      * Cycling Speed and Cadence Service
      */
-    public static BluetoothGattService createCSCService() {
+    public static BluetoothGattService createCSCService(byte feature) {
+        // Set supported feature: speed and/or cadence
+        currentFeature = feature;
+
         BluetoothGattService service = new BluetoothGattService(CSC_SERVICE,
                 BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
@@ -70,11 +73,6 @@ public class CSCProfile {
         service.addCharacteristic(cscFeature);
 
         return service;
-    }
-
-    /** Set supported feature: speed and/or cadence */
-    public static void setFeature(byte feature) {
-        currentFeature = feature;
     }
 
     // https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.csc_measurement.xml
