@@ -23,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btn_service;
 
     private boolean serviceStarted = false;
+    private MainActivityReceiver receiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,11 +70,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        receiver = new MainActivityReceiver();
         // register intent from our service
-        MainActivityReceiver receiver = new MainActivityReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction("idv.markkuo.cscblebridge.ANTDATA");
         registerReceiver(receiver, filter);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        unregisterReceiver(receiver);
     }
 
     private void resetUi() {

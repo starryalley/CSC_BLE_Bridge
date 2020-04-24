@@ -80,6 +80,9 @@ public class CSCService extends Service {
     private float lastSpeed = 0;
     private int lastCadence = 0;
 
+    // for onCreate() failure case
+    private boolean initialised = false;
+
     private AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeSpeedDistancePcc> mBSDResultReceiver = new AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeSpeedDistancePcc>() {
         @Override
         public void onResultReceived(AntPlusBikeSpeedDistancePcc result,
@@ -95,7 +98,7 @@ public class CSCService extends Service {
             }
             // send broadcast
             Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
-            i.putExtra("bsd_service_status", initialDeviceState.toString());
+            i.putExtra("bsd_service_status", initialDeviceState.toString() + "(" + resultCode + ")");
             sendBroadcast(i);
         }
 
@@ -297,6 +300,7 @@ public class CSCService extends Service {
             startAdvertising();
             startServer();
         }
+        initialised = true;
     }
 
     @Override
@@ -311,22 +315,23 @@ public class CSCService extends Service {
     public void onDestroy() {
         Log.d(TAG, "Service destroyed");
         super.onDestroy();
+        if (initialised) {
+            // stop BLE
+            BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
+            if (bluetoothAdapter != null && bluetoothAdapter.isEnabled()) {
+                stopServer();
+                stopAdvertising();
+            }
 
-        // stop BLE
-        BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
-        if (bluetoothAdapter.isEnabled()) {
-            stopServer();
-            stopAdvertising();
+            unregisterReceiver(mBluetoothReceiver);
+
+            // stop ANT+
+            if (bsdReleaseHandle != null)
+                bsdReleaseHandle.close();
+
+            if (bcReleaseHandle != null)
+                bcReleaseHandle.close();
         }
-
-        unregisterReceiver(mBluetoothReceiver);
-
-        // stop ANT+
-        if(bsdReleaseHandle != null)
-            bsdReleaseHandle.close();
-
-        if (bcReleaseHandle != null)
-            bcReleaseHandle.close();
     }
 
 
@@ -335,6 +340,10 @@ public class CSCService extends Service {
      */
     private void startAdvertising() {
         BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
+        if (bluetoothAdapter == null) {
+            Log.e(TAG, "Failed to create bluetooth adapter");
+            return;
+        }
         Log.d(TAG, "isLe2MPhySupported:" + bluetoothAdapter.isLe2MPhySupported() + ",isMultipleAdvertisementSupported:" + bluetoothAdapter.isMultipleAdvertisementSupported() +
                 ",isLeCodedPhySupported:" + bluetoothAdapter.isLeCodedPhySupported() + ",isLeExtendedAdvertisingSupported:" + bluetoothAdapter.isLeExtendedAdvertisingSupported() +
                 ",isLePeriodicAdvertisingSupported:" + bluetoothAdapter.isLePeriodicAdvertisingSupported() + ",address:" + bluetoothAdapter.getAddress());
