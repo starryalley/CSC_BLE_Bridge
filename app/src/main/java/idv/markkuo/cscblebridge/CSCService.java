@@ -208,7 +208,7 @@ public class CSCService extends Service {
                 bsdPcc = null;
             }
         }
-    };
+    }
 
     private AntPluginPcc.IDeviceStateChangeReceiver mBSDDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.CyclingSpeed);
     private AntPluginPcc.IDeviceStateChangeReceiver mBCDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.CyclingCadence);
@@ -240,7 +240,7 @@ public class CSCService extends Service {
 
             startForeground(ONGOING_NOTIFICATION_ID, notification);
         } else {
-            Notification notification = new NotificationCompat.Builder(this)
+            Notification notification = new NotificationCompat.Builder(this, CHANNEL_DEFAULT_IMPORTANCE)
                     .setContentTitle(getString(R.string.app_name))
                     .setContentText("Active")
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -291,6 +291,7 @@ public class CSCService extends Service {
 
         // Bluetooth LE
         mBluetoothManager = (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
+        assert mBluetoothManager != null;
         BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
         // continue without proper Bluetooth support
         if (!checkBluetoothSupport(bluetoothAdapter)) {
@@ -512,7 +513,6 @@ public class CSCService extends Service {
         @Override
         public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset,
                                                 BluetoothGattCharacteristic characteristic) {
-            long now = System.currentTimeMillis();
             if (CSCProfile.CSC_MEASUREMENT.equals(characteristic.getUuid())) {
                 Log.i(TAG, "Read CSC Measurement");
                 //TODO: this should never happen since this characteristic doesn't support read

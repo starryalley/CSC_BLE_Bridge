@@ -78,7 +78,7 @@ public class CSCProfile {
     // https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.csc_measurement.xml
     public static byte[] getMeasurement(long cumulativeWheelRevolution, int lastWheelEventTime,
                                         long cumulativeCrankRevolution, int lastCrankEventTime) {
-        List<Byte> data = new ArrayList<Byte>();
+        List<Byte> data = new ArrayList<>();
         data.add((byte) (currentFeature & 0x3)); // only preserve bit 0 and 1
         if ((currentFeature & CSC_FEATURE_WHEEL_REV) == CSC_FEATURE_WHEEL_REV) {
             // cumulative wheel revolutions (uint32), only take the last 4 bytes
@@ -124,8 +124,7 @@ public class CSCProfile {
     // https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.csc_feature.xml
     public static byte[] getFeature() {
         byte[] data = new byte[2];
-        data[0] = currentFeature;
-        data[1] = 0;
+        data[0] = currentFeature; // always leave the second byte 0
         return data;
     }
 }

@@ -31,16 +31,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        tv_speedSensorState = (TextView)findViewById(R.id.SpeedSensorStateText);
-        tv_cadenceSensorState = (TextView)findViewById(R.id.CadenceSensorStateText);
-        tv_speedSensorTimestamp = (TextView)findViewById(R.id.SpeedTimestampText);
-        tv_cadenceSensorTimestamp = (TextView)findViewById(R.id.CadenceTimestampText);
+        tv_speedSensorState = findViewById(R.id.SpeedSensorStateText);
+        tv_cadenceSensorState = findViewById(R.id.CadenceSensorStateText);
+        tv_speedSensorTimestamp = findViewById(R.id.SpeedTimestampText);
+        tv_cadenceSensorTimestamp = findViewById(R.id.CadenceTimestampText);
 
-        tv_speed = (TextView)findViewById(R.id.SpeedText);
-        tv_cadence = (TextView)findViewById(R.id.CadenceText);
-        btn_service = (Button)findViewById(R.id.ServiceButton);
+        tv_speed = findViewById(R.id.SpeedText);
+        tv_cadence = findViewById(R.id.CadenceText);
+        btn_service = findViewById(R.id.ServiceButton);
 
-        if (isServiceRunning(CSCService.class)) {
+        if (isServiceRunning()) {
             Log.w(TAG, "Service already started");
             serviceStarted = true;
         }
@@ -97,17 +97,18 @@ public class MainActivity extends AppCompatActivity {
         tv_cadence.setText(getText(R.string.no_data));
     }
 
-    private boolean isServiceRunning(Class<?> serviceClass) {
+    private boolean isServiceRunning() {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        assert manager != null;
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
+            if (CSCService.class.getName().equals(service.service.getClassName())) {
                 return true;
             }
         }
         return false;
     }
 
-    // this receive is used to update UI only
+    // this BroadcastReceiver is used to update UI only
     private class MainActivityReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
