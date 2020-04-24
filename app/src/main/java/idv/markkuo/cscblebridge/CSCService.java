@@ -24,12 +24,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.ParcelUuid;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
 
 import com.dsi.ant.plugins.antplus.pcc.AntPlusBikeCadencePcc;
 import com.dsi.ant.plugins.antplus.pcc.AntPlusBikeSpeedDistancePcc;
@@ -214,6 +216,39 @@ public class CSCService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "Service onStartCommand");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent notificationIntent = new Intent(this, CSCService.class);
+            PendingIntent pendingIntent =
+                    PendingIntent.getActivity(this, 0, notificationIntent, 0);
+
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_DEFAULT_IMPORTANCE, CHANNEL_DEFAULT_IMPORTANCE, importance);
+            channel.setDescription(CHANNEL_DEFAULT_IMPORTANCE);
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            assert notificationManager != null;
+            notificationManager.createNotificationChannel(channel);
+
+            // build a notification
+            Notification notification =
+                    new Notification.Builder(this, CHANNEL_DEFAULT_IMPORTANCE)
+                            .setContentTitle(getText(R.string.app_name))
+                            .setContentText("Active")
+                            //.setSmallIcon(R.drawable.icon)
+                            .setContentIntent(pendingIntent)
+                            .setTicker(getText(R.string.app_name))
+                            .build();
+
+            startForeground(ONGOING_NOTIFICATION_ID, notification);
+        } else {
+            Notification notification = new NotificationCompat.Builder(this)
+                    .setContentTitle(getString(R.string.app_name))
+                    .setContentText("Active")
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setAutoCancel(true)
+                    .build();
+
+            startForeground(ONGOING_NOTIFICATION_ID, notification);
+        }
         return Service.START_NOT_STICKY;
     }
 
@@ -250,31 +285,6 @@ public class CSCService extends Service {
     public void onCreate() {
         Log.d(TAG, "Service started");
         super.onCreate();
-
-        // start foreground service early
-
-        Intent notificationIntent = new Intent(this, CSCService.class);
-        PendingIntent pendingIntent =
-                PendingIntent.getActivity(this, 0, notificationIntent, 0);
-
-        // create notification channel
-        int importance = NotificationManager.IMPORTANCE_DEFAULT;
-        NotificationChannel channel = new NotificationChannel(CHANNEL_DEFAULT_IMPORTANCE, CHANNEL_DEFAULT_IMPORTANCE, importance);
-        channel.setDescription(CHANNEL_DEFAULT_IMPORTANCE);
-        NotificationManager notificationManager = getSystemService(NotificationManager.class);
-        assert notificationManager != null;
-        notificationManager.createNotificationChannel(channel);
-        // build a notification
-        Notification notification =
-                new Notification.Builder(this, CHANNEL_DEFAULT_IMPORTANCE)
-                        .setContentTitle(getText(R.string.app_name))
-                        .setContentText("Active")
-                        //.setSmallIcon(R.drawable.icon)
-                        .setContentIntent(pendingIntent)
-                        .setTicker(getText(R.string.app_name))
-                        .build();
-        // start this service as a foreground one
-        startForeground(ONGOING_NOTIFICATION_ID, notification);
 
         // ANT+
         initAntPlus();
@@ -344,9 +354,6 @@ public class CSCService extends Service {
             Log.e(TAG, "Failed to create bluetooth adapter");
             return;
         }
-        Log.d(TAG, "isLe2MPhySupported:" + bluetoothAdapter.isLe2MPhySupported() + ",isMultipleAdvertisementSupported:" + bluetoothAdapter.isMultipleAdvertisementSupported() +
-                ",isLeCodedPhySupported:" + bluetoothAdapter.isLeCodedPhySupported() + ",isLeExtendedAdvertisingSupported:" + bluetoothAdapter.isLeExtendedAdvertisingSupported() +
-                ",isLePeriodicAdvertisingSupported:" + bluetoothAdapter.isLePeriodicAdvertisingSupported() + ",address:" + bluetoothAdapter.getAddress());
         mBluetoothLeAdvertiser = bluetoothAdapter.getBluetoothLeAdvertiser();
         if (mBluetoothLeAdvertiser == null) {
             Log.w(TAG, "Failed to create advertiser");
