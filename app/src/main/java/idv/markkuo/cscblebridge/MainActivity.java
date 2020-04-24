@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -50,7 +51,10 @@ public class MainActivity extends AppCompatActivity {
                 Intent i = new Intent(getApplicationContext(), CSCService.class);
                 if (!serviceStarted) {
                     Log.d(TAG, "Starting Service");
-                    MainActivity.this.startForegroundService(i);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                        MainActivity.this.startForegroundService(i);
+                    else
+                        MainActivity.this.startService(i);
                 } else {
                     Log.d(TAG, "Stopping Service");
                     MainActivity.this.stopService(i);
