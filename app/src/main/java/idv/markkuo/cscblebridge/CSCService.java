@@ -98,7 +98,7 @@ public class CSCService extends Service {
             }
             // send broadcast
             Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
-            i.putExtra("bsd_service_status", initialDeviceState.toString() + "(" + resultCode + ")");
+            i.putExtra("bsd_service_status", initialDeviceState.toString() + "\n(" + resultCode + ")");
             sendBroadcast(i);
         }
 
@@ -147,7 +147,7 @@ public class CSCService extends Service {
             }
             // send broadcast
             Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
-            i.putExtra("bc_service_status", initialDeviceState.toString());
+            i.putExtra("bc_service_status", initialDeviceState.toString() + "\n(" + resultCode + ")");
             sendBroadcast(i);
         }
 
