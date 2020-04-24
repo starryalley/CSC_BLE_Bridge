@@ -21,11 +21,24 @@ I want to try out Zwift desktop version but I can't get a USB ANT+ Stick anywher
 I can now sees my speed and cadence coming from ANT+ sensors on Zwift Mac without the need of extra hardware.
 
 
+# Tested devices
+
+## ANT+ and BLE enabled Android devices
+- Samsung Galaxy S8
+- Samsung Galaxy J5 2016
+
+## ANT+ Speed/Cadence sensors
+- [Garmin gen 1 ANT+ only speed and cadence sensor](https://buy.garmin.com/en-MW/ssa/p/146897)
+
+## Apps that use BLE CSCP (Cycling Speed/Cadence profile)
+- Zwift Mac version on a 2019 13" macbook pro
+
+
 # TODO
 
 - only speed sensor and cadence sensor (both features enabled) implemented so far, and I did not take into account that when speed/cadence is a single combined sensor. However, if you only have one of the sensor (either speed or cadence), this should not affect the functionality. On Zwift (or other app which reads CSCP through BLE) you will see only speed or only cadence data.
 
-- only tested with the [Garmin gen 1 ANT+ only speed sensor](https://buy.garmin.com/en-MW/ssa/p/146897) since it's the only thing I got. For BLE client app, I only tried Zwift Mac version on a 2019 13" macbook pro.
+- only tested with the [Garmin gen 1 ANT+ only speed and cadence sensor](https://buy.garmin.com/en-MW/ssa/p/146897) since it's the only thing I got. For BLE client app, I only tried Zwift Mac version on a 2019 13" macbook pro.
 
 # Known issues
 
