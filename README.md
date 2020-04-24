@@ -1,18 +1,22 @@
 
 # What
 
-This is a Cycling Speed and Cadence (CSC) Ant+ to BLE Bridge app.
+This is an Ant+ to BLE (Bluetooth Low Energy) Bridging app for ANT+ Cycling Speed and Cadence (CSC) sensors. 
+The app will acts as a Cycling speed/cadence BLE sensor so other BLE device (phone, PC, Mac, tablet) can reads data from ANT+ sensors.
+
+![Screenshot](screenshots/screenshot_1.jpg)
+
 
 ## Details
 
-This is an Android app which reads ANT+ cycling speed/cadence (CSC) sensor/sensors in the background (actually in an Android foreground service), and advertises itself as a BLE device which implements Cycling Speed and Cadence Profile (CSCP) so that other devices can see this Android device as a Cycling Speed and Cadence Bluetooth BLE sensor. 
+This is an Android app which reads ANT+ cycling speed/cadence (CSC) sensor/sensors in the background (actually in an Android foreground service), and advertises itself as a `Bluetooth Low Energy (BLE)` device which implements `Cycling Speed and Cadence Profile (CSCP)` so that other devices can see this Android device as a Cycling Speed and Cadence Bluetooth BLE sensor.
 
 This is useful when you only have ANT+ CSC sensors but you want to connect to them as BLE sensors (provided that you don't have an USB ANT+ stick around but happen to have an ANT+ enabled Android device like a Samsung S8 that I have).
 
 
 # Why
 
-I want to try out Zwift desktop version but I can't get a USB ANT+ Stick anywhere now in my country (due to the C-19 pandemic). So I decided to write one. 
+I want to try out Zwift desktop version but I can't get a USB ANT+ Stick anywhere now in my country (due to the C-19 pandemic). So I decided to write one.
 
 I can now sees my speed and cadence coming from ANT+ sensors on Zwift Mac without the need of extra hardware.
 
