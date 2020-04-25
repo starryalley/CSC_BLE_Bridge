@@ -60,17 +60,7 @@ public class MainActivity extends AppCompatActivity {
                     MainActivity.this.stopService(i);
                 }
                 serviceStarted = !serviceStarted;
-                // update the title
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        resetUi();
-                        if (serviceStarted)
-                            btn_service.setText(getText(R.string.stop_service));
-                        else
-                            btn_service.setText(getText(R.string.start_service));
-                    }
-                });
+                updateButtonState();
             }
         });
 
@@ -79,6 +69,28 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter filter = new IntentFilter();
         filter.addAction("idv.markkuo.cscblebridge.ANTDATA");
         registerReceiver(receiver, filter);
+    }
+
+    private void updateButtonState() {
+        // update the title
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                resetUi();
+                if (serviceStarted)
+                    btn_service.setText(getText(R.string.stop_service));
+                else
+                    btn_service.setText(getText(R.string.start_service));
+            }
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume(): service was " + (serviceStarted ? "started" : "stopped"));
+        serviceStarted = isServiceRunning();
+        updateButtonState();
     }
 
     @Override
