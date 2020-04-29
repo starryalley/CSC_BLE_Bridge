@@ -53,6 +53,7 @@ Code samples:
 Spec and Document
 - [ANT+ Basic](https://www.thisisant.com/developer/ant/ant-basics)
 - [Introduction to Bluetooth low energy](https://learn.adafruit.com/introduction-to-bluetooth-low-energy/gatt)
+- [CH4 of Getting Started with Bluetooth Low Energy](https://www.oreilly.com/library/view/getting-started-with/9781491900550/ch04.html)
 - [Bluetooth GATT Specifications](https://www.bluetooth.com/specifications/gatt)
   - Cycling Speed and Cadence Profile
   - Cycling Speed and Cadence Service
