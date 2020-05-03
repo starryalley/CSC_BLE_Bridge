@@ -25,10 +25,11 @@ I can now sees my speed and cadence coming from ANT+ sensors on Zwift Mac withou
 
 ## ANT+ and BLE enabled Android devices
 - Samsung Galaxy S8
-- Samsung Galaxy J5 2016
+- Samsung Galaxy J5 2016 - Thanks [louisJ20](https://github.com/louisJ20)
 
 ## ANT+ Speed/Cadence sensors
 - [Garmin gen 1 ANT+ only speed and cadence sensor](https://buy.garmin.com/en-MW/ssa/p/146897)
+- [Garmin speed cadence combined sensor](https://www.thisisant.com/directory/gsc-10-speed-cadence-bike-sensor) - Thanks [louisJ20](https://github.com/louisJ20)
 
 ## Apps that use BLE CSCP (Cycling Speed/Cadence profile)
 - Zwift Mac version on a 2019 13" macbook pro
@@ -36,9 +37,11 @@ I can now sees my speed and cadence coming from ANT+ sensors on Zwift Mac withou
 
 # TODO
 
-- only speed sensor and cadence sensor (both features enabled) implemented so far, and I did not take into account that when speed/cadence is a single combined sensor. However, if you only have one of the sensor (either speed or cadence), this should not affect the functionality. On Zwift (or other app which reads CSCP through BLE) you will see only speed or only cadence data.
+- speed sensor and cadence sensor are both enabled in the CSC BLE feature bits, meaning that this app will always advertise itself as being both speed and cadence BLE sensor. However, if you only have one of the sensor (either speed or cadence), this should still work. I've been using only my ANT+ cadence sensor with this app because I don't need speed on Zwift now. On Zwift (or other app which reads CSCP through BLE) you will see only speed or only cadence data if you only have one.
 
-- only tested with the [Garmin gen 1 ANT+ only speed and cadence sensor](https://buy.garmin.com/en-MW/ssa/p/146897) since it's the only thing I got. For BLE client app, I only tried Zwift Mac version on a 2019 13" macbook pro.
+- limited testing. See Tested devices list above.
+
+- probably add ANT+ heart rate support in the future. However it could be another app then.
 
 # Known issues
 
