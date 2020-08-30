@@ -362,7 +362,7 @@ public class CSCService extends Service {
         }
 
         AdvertiseSettings settings = new AdvertiseSettings.Builder()
-                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
+                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
                 .setConnectable(true)
                 .setTimeout(0)
                 .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
@@ -370,8 +370,7 @@ public class CSCService extends Service {
 
         AdvertiseData data = new AdvertiseData.Builder()
                 .setIncludeDeviceName(true)
-                .setIncludeTxPowerLevel(false)
-                //.addServiceData()
+                .setIncludeTxPowerLevel(true)
                 .addServiceUuid(new ParcelUuid(CSCProfile.CSC_SERVICE))
                 .build();
 
