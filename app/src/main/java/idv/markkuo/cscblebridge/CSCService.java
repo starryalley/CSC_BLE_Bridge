@@ -59,9 +59,9 @@ public class CSCService extends Service {
     private PccReleaseHandle<AntPlusBikeCadencePcc> bcReleaseHandle = null;
 
     // 700x23c circumference in meter
-    private static final BigDecimal circumference = new BigDecimal(2.095);
+    private static final BigDecimal circumference = new BigDecimal("2.095");
     // m/s to km/h ratio
-    private static final BigDecimal msToKmSRatio = new BigDecimal(3.6);
+    private static final BigDecimal msToKmSRatio = new BigDecimal("3.6");
 
     // bluetooth API
     private BluetoothManager mBluetoothManager;
