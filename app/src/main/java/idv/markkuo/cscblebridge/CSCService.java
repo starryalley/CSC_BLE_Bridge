@@ -489,13 +489,14 @@ public class CSCService extends Service {
 
         @Override
         public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
-            Log.i(TAG, "onConnectionStateChange() status:" + status + "->" + newState + ", device" + device);
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                Log.i(TAG, "BluetoothDevice CONNECTED: " + device);
-            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                Log.i(TAG, "BluetoothDevice DISCONNECTED: " + device);
-                //Remove device from any active subscriptions
-                mRegisteredDevices.remove(device);
+            if (mRegisteredDevices.contains(device)) {
+                if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    Log.i(TAG, "BluetoothDevice DISCONNECTED: " + device.getName() + " [" + device.getAddress() + "]");
+                    //Remove device from any active subscriptions
+                    mRegisteredDevices.remove(device);
+                } else {
+                    Log.i(TAG, "onConnectionStateChange() status:" + status + "->" + newState + ", device" + device);
+                }
             }
         }
 
