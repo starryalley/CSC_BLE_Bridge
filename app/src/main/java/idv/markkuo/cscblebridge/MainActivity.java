@@ -15,12 +15,13 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    private TextView tv_speedSensorState, tv_cadenceSensorState,
-            tv_speedSensorTimestamp, tv_cadenceSensorTimestamp,
-            tv_speed, tv_cadence;
+    private TextView tv_speedSensorState, tv_cadenceSensorState, tv_hrSensorState,
+            tv_speedSensorTimestamp, tv_cadenceSensorTimestamp, tv_hrSensorTimestamp,
+            tv_speed, tv_cadence, tv_hr;
     private Button btn_service;
 
     private boolean serviceStarted = false;
@@ -33,11 +34,15 @@ public class MainActivity extends AppCompatActivity {
 
         tv_speedSensorState = findViewById(R.id.SpeedSensorStateText);
         tv_cadenceSensorState = findViewById(R.id.CadenceSensorStateText);
+        tv_hrSensorState = findViewById(R.id.HRSensorStateText);
+
         tv_speedSensorTimestamp = findViewById(R.id.SpeedTimestampText);
         tv_cadenceSensorTimestamp = findViewById(R.id.CadenceTimestampText);
+        tv_hrSensorTimestamp = findViewById(R.id.HRSensorStateText);
 
         tv_speed = findViewById(R.id.SpeedText);
         tv_cadence = findViewById(R.id.CadenceText);
+        tv_hr = findViewById(R.id.HRText);
         btn_service = findViewById(R.id.ServiceButton);
 
         if (isServiceRunning()) {
@@ -103,10 +108,13 @@ public class MainActivity extends AppCompatActivity {
     private void resetUi() {
         tv_speedSensorState.setText(getText(R.string.no_data));
         tv_cadenceSensorState.setText(getText(R.string.no_data));
+        tv_hrSensorState.setText(getText(R.string.no_data));
         tv_speedSensorTimestamp.setText(getText(R.string.no_data));
         tv_cadenceSensorTimestamp.setText(getText(R.string.no_data));
+        tv_hrSensorTimestamp.setText(getText(R.string.no_data));
         tv_speed.setText(getText(R.string.no_data));
         tv_cadence.setText(getText(R.string.no_data));
+        tv_hr.setText(getText(R.string.no_data));
     }
 
     private boolean isServiceRunning() {
@@ -126,10 +134,13 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             final String statusBSD = intent.getStringExtra("bsd_service_status");
             final String statusBC = intent.getStringExtra("bc_service_status");
+            final String statusHR = intent.getStringExtra("hr_service_status");
             final long speedTimestamp = intent.getLongExtra("speed_timestamp", -1);
             final long cadenceTimestamp = intent.getLongExtra("cadence_timestamp", -1);
+            final long hrTimestamp = intent.getLongExtra("hr_timestamp", -1);
             final float speed = intent.getFloatExtra("speed", -1.0f);
             final int cadence = intent.getIntExtra("cadence", -1);
+            final int hr = intent.getIntExtra("hr", -1);
 
             runOnUiThread(new Runnable() {
                 @SuppressLint("DefaultLocale")
@@ -139,14 +150,20 @@ public class MainActivity extends AppCompatActivity {
                         tv_speedSensorState.setText(statusBSD);
                     if (statusBC != null)
                         tv_cadenceSensorState.setText(statusBC);
+                    if (statusHR != null)
+                        tv_hrSensorState.setText(statusHR);
                     if (speedTimestamp >= 0)
                         tv_speedSensorTimestamp.setText(String.valueOf(speedTimestamp));
                     if (cadenceTimestamp >= 0)
                         tv_cadenceSensorTimestamp.setText(String.valueOf(cadenceTimestamp));
+                    if (hrTimestamp >= 0)
+                        tv_cadenceSensorTimestamp.setText(String.valueOf(hrTimestamp));
                     if (speed >= 0.0f)
                         tv_speed.setText(String.format("%.02f", speed));
                     if (cadence >= 0)
                         tv_cadence.setText(String.valueOf(cadence));
+                    if (hr >= 0)
+                        tv_hr.setText(String.valueOf(hr));
                 }
             });
         }

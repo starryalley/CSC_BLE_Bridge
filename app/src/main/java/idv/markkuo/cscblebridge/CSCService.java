@@ -35,6 +35,7 @@ import androidx.core.app.NotificationCompat;
 
 import com.dsi.ant.plugins.antplus.pcc.AntPlusBikeCadencePcc;
 import com.dsi.ant.plugins.antplus.pcc.AntPlusBikeSpeedDistancePcc;
+import com.dsi.ant.plugins.antplus.pcc.AntPlusHeartRatePcc;
 import com.dsi.ant.plugins.antplus.pcc.defines.DeviceState;
 import com.dsi.ant.plugins.antplus.pcc.defines.EventFlag;
 import com.dsi.ant.plugins.antplus.pcc.defines.RequestAccessResult;
@@ -57,6 +58,13 @@ public class CSCService extends Service {
     private PccReleaseHandle<AntPlusBikeSpeedDistancePcc> bsdReleaseHandle = null;
     private AntPlusBikeCadencePcc bcPcc = null;
     private PccReleaseHandle<AntPlusBikeCadencePcc> bcReleaseHandle = null;
+    private AntPlusHeartRatePcc hrPcc = null;
+    private PccReleaseHandle<AntPlusHeartRatePcc> hrReleaseHandle = null;
+
+    // Checks that the callback that is done after a BluetoothGattServer.addService() has been complete.
+    // More services cannot be added until the callback has completed successfully
+    private boolean btServiceInitialized = false;
+
 
     // 700x23c circumference in meter
     private static final BigDecimal circumference = new BigDecimal("2.095");
@@ -79,8 +87,10 @@ public class CSCService extends Service {
     // for UI updates
     private long lastSpeedTimestamp = 0;
     private long lastCadenceTimestamp = 0;
+    private long lastHRTimestamp = 0;
     private float lastSpeed = 0;
     private int lastCadence = 0;
+    private int lastHR = 0;
 
     // for onCreate() failure case
     private boolean initialised = false;
@@ -178,9 +188,41 @@ public class CSCService extends Service {
         }
     };
 
+    private AntPluginPcc.IPluginAccessResultReceiver<AntPlusHeartRatePcc> mHRResultReceiver = new AntPluginPcc.IPluginAccessResultReceiver<AntPlusHeartRatePcc>() {
+        @Override
+        public void onResultReceived(AntPlusHeartRatePcc result, RequestAccessResult resultCode, DeviceState initialDeviceState) {
+            if (resultCode == RequestAccessResult.SUCCESS) {
+                hrPcc = result;
+                Log.d(TAG, result.getDeviceName() + ": " + initialDeviceState);
+                subscribeToEvents();
+            } else if (resultCode == RequestAccessResult.USER_CANCELLED) {
+                Log.d(TAG, "HR Closed:" + resultCode);
+            } else {
+                Log.w(TAG, "HR state changed:" + initialDeviceState + ", resultCode:" + resultCode);
+            }
+            // send broadcast
+            Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
+            i.putExtra("hr_service_status", initialDeviceState.toString() + "\n(" + resultCode + ")");
+            sendBroadcast(i);
+        }
+
+        private void subscribeToEvents() {
+            hrPcc.subscribeHeartRateDataEvent(new AntPlusHeartRatePcc.IHeartRateDataReceiver() {
+                @Override
+                public void onNewHeartRateData(final long estTimestamp, EnumSet<EventFlag> eventFlags,
+                                               final int computedHeartRate, final long heartBeatCount,
+                                               final BigDecimal heartBeatEventTime, final AntPlusHeartRatePcc.DataState dataState) {
+                    lastHR = computedHeartRate;
+                    lastHRTimestamp = estTimestamp;
+                }
+            });
+        }
+    };
+
     private enum AntSensorType {
         CyclingSpeed,
-        CyclingCadence
+        CyclingCadence,
+        HR
     }
 
     private class AntDeviceChangeReceiver implements AntPluginPcc.IDeviceStateChangeReceiver {
@@ -197,6 +239,9 @@ public class CSCService extends Service {
             } else if (type == AntSensorType.CyclingCadence) {
                 extraName = "bc_service_status";
                 Log.d(TAG, "Cadence sensor onDeviceStateChange:" + newDeviceState);
+            } else if (type == AntSensorType.HR) {
+                extraName = "hr_service_status";
+                Log.d(TAG, "HR sensor onDeviceStateChange:" + newDeviceState);
             }
             // send broadcast about device status
             Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
@@ -212,6 +257,7 @@ public class CSCService extends Service {
 
     private AntPluginPcc.IDeviceStateChangeReceiver mBSDDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.CyclingSpeed);
     private AntPluginPcc.IDeviceStateChangeReceiver mBCDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.CyclingCadence);
+    private AntPluginPcc.IDeviceStateChangeReceiver mHRDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.HR);
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -342,6 +388,9 @@ public class CSCService extends Service {
 
             if (bcReleaseHandle != null)
                 bcReleaseHandle.close();
+
+            if (hrReleaseHandle != null)
+                hrReleaseHandle.close();
         }
     }
 
@@ -372,6 +421,7 @@ public class CSCService extends Service {
                 .setIncludeDeviceName(true)
                 .setIncludeTxPowerLevel(true)
                 .addServiceUuid(new ParcelUuid(CSCProfile.CSC_SERVICE))
+                .addServiceUuid(new ParcelUuid(CSCProfile.HR_SERVICE))
                 .build();
 
         mBluetoothLeAdvertiser
@@ -397,9 +447,28 @@ public class CSCService extends Service {
             return;
         }
 
+        btServiceInitialized = false;
         // TODO: enable either 1 of them or both of them according to user selection
-        mBluetoothGattServer.addService(CSCProfile.createCSCService((byte)(CSCProfile.CSC_FEATURE_WHEEL_REV | CSCProfile.CSC_FEATURE_CRANK_REV)));
-        Log.d(TAG, "CSCP enabled!");
+        if (mBluetoothGattServer.addService(CSCProfile.createCSCService((byte)(CSCProfile.CSC_FEATURE_WHEEL_REV | CSCProfile.CSC_FEATURE_CRANK_REV)))) {
+            Log.d(TAG, "CSCP enabled!");
+        } else {
+            Log.d(TAG, "Failed to add service to bluetooth layer!");
+        }
+
+        // We cannot add another service until the callback for the previous service has completed
+        while (!btServiceInitialized);
+
+        btServiceInitialized = false;
+        if (mBluetoothGattServer.addService(CSCProfile.createHRService())) {
+            Log.d(TAG, "HR enabled!");
+        } else {
+            Log.d(TAG, "Failed to add service to bluetooth layer!");
+        }
+
+        Log.d(TAG, "Enumerating (" +  mBluetoothGattServer.getServices().size() + ") BT services");
+        for (BluetoothGattService b : mBluetoothGattServer.getServices()) {
+            Log.d(TAG,"Services registered: " +  b.getUuid().toString());
+        }
 
         // start periodicUpdate, sending notification to subscribed device and UI
         handler.post(periodicUpdate);
@@ -446,9 +515,11 @@ public class CSCService extends Service {
             Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
             i.putExtra("speed", lastSpeed);
             i.putExtra("cadence", lastCadence);
+            i.putExtra("hr", lastHR);
             i.putExtra("speed_timestamp", lastSpeedTimestamp);
             i.putExtra("cadence_timestamp", lastCadenceTimestamp);
-            Log.v(TAG, "Updating UI: speed:" + lastSpeed + ", cadence:" + lastCadence + ", speed_ts:" + lastSpeedTimestamp + ", cadence_ts:" + lastCadenceTimestamp);
+            i.putExtra("hr_timestamp", lastHRTimestamp);
+            Log.v(TAG, "Updating UI: speed:" + lastSpeed + ", cadence:" + lastCadence + ", hr " + lastHR +", speed_ts:" + lastSpeedTimestamp + ", cadence_ts:" + lastCadenceTimestamp + ", " + lastHRTimestamp);
             sendBroadcast(i);
         }
     };
@@ -468,14 +539,36 @@ public class CSCService extends Service {
 
         Log.v(TAG, "Sending update to " + mRegisteredDevices.size() + " subscribers");
         for (BluetoothDevice device : mRegisteredDevices) {
-            BluetoothGattCharacteristic measurementCharacteristic = mBluetoothGattServer
-                    .getService(CSCProfile.CSC_SERVICE)
-                    .getCharacteristic(CSCProfile.CSC_MEASUREMENT);
-            if (!measurementCharacteristic.setValue(data)) {
-                Log.w(TAG, "CSC Measurement data isn't set properly!");
+            BluetoothGattService service = mBluetoothGattServer.getService(CSCProfile.CSC_SERVICE);
+            if (service != null) {
+                BluetoothGattCharacteristic measurementCharacteristic = mBluetoothGattServer
+                        .getService(CSCProfile.CSC_SERVICE)
+                        .getCharacteristic(CSCProfile.CSC_MEASUREMENT);
+                if (!measurementCharacteristic.setValue(data)) {
+                    Log.w(TAG, "CSC Measurement data isn't set properly!");
+                }
+                // false is used to send a notification
+                mBluetoothGattServer.notifyCharacteristicChanged(device, measurementCharacteristic, false);
+            } else {
+                Log.v(TAG, "Service " + CSCProfile.CSC_SERVICE + " was not found as an installed service");
             }
-            // false is used to send a notification
-            mBluetoothGattServer.notifyCharacteristicChanged(device, measurementCharacteristic, false);
+
+            service = mBluetoothGattServer.getService(CSCProfile.HR_SERVICE);
+            if (service != null) {
+                Log.v(TAG, "Processing Heart Rate");
+
+                BluetoothGattCharacteristic measurementCharacteristic = mBluetoothGattServer
+                        .getService(CSCProfile.HR_SERVICE)
+                        .getCharacteristic(CSCProfile.HR_MEASUREMENT);
+
+                byte[] hrData = CSCProfile.getHR(lastHR, lastHRTimestamp);
+                if (!measurementCharacteristic.setValue(hrData)) {
+                    Log.w(TAG, "HR  Measurement data isn't set properly!");
+                }
+                mBluetoothGattServer.notifyCharacteristicChanged(device, measurementCharacteristic, false);
+            } else {
+                Log.v(TAG, "Service " + CSCProfile.HR_SERVICE + " was not found as an installed service");
+            }
         }
     }
 
@@ -484,7 +577,8 @@ public class CSCService extends Service {
         @Override
         public void onServiceAdded(int status, BluetoothGattService service) {
             Log.i(TAG, "onServiceAdded(): status:" + status + ", service:" + service);
-            // do nothing here
+            // Sets up for next service to be added
+            btServiceInitialized = true;
         }
 
         @Override
@@ -605,6 +699,8 @@ public class CSCService extends Service {
             bsdReleaseHandle.close();
         if (bcReleaseHandle != null)
             bcReleaseHandle.close();
+        if (hrReleaseHandle != null)
+            hrReleaseHandle.close();
 
         Log.d(TAG, "requesting ANT+ access");
         // starts speed sensor search
@@ -614,10 +710,15 @@ public class CSCService extends Service {
         bcReleaseHandle = AntPlusBikeCadencePcc.requestAccess(this, 0, 0, false,
                 mBCResultReceiver, mBCDeviceStateChangeReceiver);
 
+        // starts hr sensor search
+        hrReleaseHandle = AntPlusHeartRatePcc.requestAccess(this, 0, 0,
+                mHRResultReceiver, mHRDeviceStateChangeReceiver);
+
         // send initial state for UI
         Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
         i.putExtra("bsd_service_status", "SEARCHING");
         i.putExtra("bc_service_status", "SEARCHING");
+        i.putExtra("hr_service_status", "SEARCHING");
         sendBroadcast(i);
     }
 

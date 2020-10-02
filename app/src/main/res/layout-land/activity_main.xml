@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_margin="10sp"
     tools:context="idv.markkuo.cscblebridge.MainActivity">
 
     <LinearLayout
@@ -28,6 +29,13 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/cadence_sensor" />
+
+            <TextView
+                android:id="@+id/textView9"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/hr_sensor" />
         </LinearLayout>
 
         <LinearLayout
@@ -50,6 +58,14 @@
                 android:layout_weight="1"
                 android:text="@string/no_data"
                 android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/HRSensorStateText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/no_data"
+                android:textSize="14sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -66,6 +82,13 @@
 
             <TextView
                 android:id="@+id/textView3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/timestamp" />
+
+            <TextView
+                android:id="@+id/textView11"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -92,6 +115,14 @@
                 android:layout_weight="1"
                 android:text="@string/no_data"
                 android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/HRTimestampText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/no_data"
+                android:textSize="20sp" />
         </LinearLayout>
 
         <Space
@@ -113,9 +144,16 @@
             <TextView
                 android:id="@+id/textView6"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:text="@string/cadence" />
+
+            <TextView
+                android:id="@+id/textView13"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/heart_rate" />
         </LinearLayout>
 
         <LinearLayout
@@ -135,6 +173,14 @@
             <TextView
                 android:id="@+id/CadenceText"
                 android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="@string/no_data"
+                android:textSize="64sp" />
+
+            <TextView
+                android:id="@+id/HRText"
+                android:layout_width="0sp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:text="@string/no_data"

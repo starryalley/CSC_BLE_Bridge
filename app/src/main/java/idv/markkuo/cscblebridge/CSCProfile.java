@@ -31,6 +31,10 @@ public class CSCProfile {
     /** Mandatory Characteristic: CSC Feature */
     public static UUID CSC_FEATURE = UUID.fromString("00002a5c-0000-1000-8000-00805f9b34fb");
 
+    /** Heart Rate */
+    public static UUID HR_SERVICE = UUID.fromString("0000180D-0000-1000-8000-00805f9b34fb");
+    public static UUID HR_MEASUREMENT = UUID.fromString("00002A37-0000-1000-8000-00805f9b34fb");
+
     /** supported CSC Feature bit: Speed sensor */
     public static final byte CSC_FEATURE_WHEEL_REV = 0x1;
     /** supported CSC Feature bit: Cadence sensor */
@@ -75,6 +79,28 @@ public class CSCProfile {
         return service;
     }
 
+    /**
+     * Return a configured {@link BluetoothGattService} instance for the
+     * Heart Rate service
+     */
+    public static BluetoothGattService createHRService() {
+        BluetoothGattService service = new BluetoothGattService(HR_SERVICE,
+                BluetoothGattService.SERVICE_TYPE_PRIMARY);
+
+        // CSC Measurement characteristic
+        BluetoothGattCharacteristic hrMeasurement = new BluetoothGattCharacteristic(HR_MEASUREMENT,
+                //Read-only characteristic, supports notifications
+                BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+                BluetoothGattCharacteristic.PERMISSION_READ);
+        BluetoothGattDescriptor configDescriptor = new BluetoothGattDescriptor(CLIENT_CONFIG,
+                //Read/write descriptor
+                BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
+        hrMeasurement.addDescriptor(configDescriptor);
+
+        service.addCharacteristic(hrMeasurement);
+
+        return service;
+    }
     // https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.csc_measurement.xml
     public static byte[] getMeasurement(long cumulativeWheelRevolution, int lastWheelEventTime,
                                         long cumulativeCrankRevolution, int lastCrankEventTime) {
@@ -110,6 +136,22 @@ public class CSCProfile {
         return byteArray;
     }
 
+    // https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.heart_rate_measurement.xml
+    public static byte[] getHR(int hr, long lastHRTime) {
+        List<Byte> data = new ArrayList<>();
+
+        // Add the Flags, for our use they're all 0s
+        data.add((byte) (0b00000000));
+        data.add((byte) (hr));
+
+        // convert to primitive byte array
+        byte[] byteArray = new byte[data.size()];
+        for (int i = 0; i < data.size(); i++) {
+            byteArray[i] = data.get(i);
+        }
+        Log.v(TAG, "HR Measurement: 0x" + bytesToHex(byteArray));
+        return byteArray;
+    }
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
     private static String bytesToHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
