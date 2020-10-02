@@ -24,8 +24,9 @@ I can now sees my speed and cadence coming from ANT+ sensors on Zwift Mac withou
 # Tested devices
 
 ## ANT+ and BLE enabled Android devices
-- Samsung Galaxy S8
+- Samsung Galaxy S8 (Android 9)
 - Samsung Galaxy J5 2016 - Thanks [louisJ20](https://github.com/louisJ20)
+- Samsung Galaxy S9 (Android 10) - Thanks [pinkemma](https://github.com/pinkemma)
 
 ## ANT+ Speed/Cadence sensors
 - [Garmin gen 1 ANT+ only speed and cadence sensor](https://buy.garmin.com/en-MW/ssa/p/146897)
