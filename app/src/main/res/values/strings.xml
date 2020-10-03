@@ -6,6 +6,8 @@
     <string name="current_speed">Current Speed on 700x23C tire (km/h)</string>
     <string name="speed_sensor">Speed Sensor</string>
     <string name="cadence_sensor">Cadence Sensor</string>
+    <string name="hr_sensor">HR sensor</string>
     <string name="timestamp">TimeStamp</string>
     <string name="cadence">Current Cadence (rpm)</string>
+    <string name="heart_rate">Heart rate (bpm)</string>
 </resources>
