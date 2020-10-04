@@ -20,7 +20,7 @@ I want to try out Zwift desktop version but I can't get a USB ANT+ Stick anywher
 
 I can now sees my speed and cadence coming from ANT+ sensors on Zwift Mac without the need of extra hardware.
 
-Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart Rate sensor profile so that this app also reads heart rate from ANT+ sensor and bridges it to bluetooth. (see [PR #5](GH-5) since 10/2020)
+Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart Rate sensor profile so that this app also reads heart rate from ANT+ sensor and bridges it to bluetooth. (see [PR #5](https://github.com/starryalley/CSC_BLE_Bridge/pull/5) since 10/2020)
 
 # Tested devices
 
