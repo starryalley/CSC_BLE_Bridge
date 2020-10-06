@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
         tv_speedSensorTimestamp = findViewById(R.id.SpeedTimestampText);
         tv_cadenceSensorTimestamp = findViewById(R.id.CadenceTimestampText);
-        tv_hrSensorTimestamp = findViewById(R.id.HRSensorStateText);
+        tv_hrSensorTimestamp = findViewById(R.id.HRTimestampText);
 
         tv_speed = findViewById(R.id.SpeedText);
         tv_cadence = findViewById(R.id.CadenceText);
