@@ -157,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
                     if (cadenceTimestamp >= 0)
                         tv_cadenceSensorTimestamp.setText(String.valueOf(cadenceTimestamp));
                     if (hrTimestamp >= 0)
-                        tv_cadenceSensorTimestamp.setText(String.valueOf(hrTimestamp));
+                        tv_hrSensorTimestamp.setText(String.valueOf(hrTimestamp));
                     if (speed >= 0.0f)
                         tv_speed.setText(String.format("%.02f", speed));
                     if (cadence >= 0)
