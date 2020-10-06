@@ -24,6 +24,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -95,7 +96,11 @@ public class CSCService extends Service {
     // for onCreate() failure case
     private boolean initialised = false;
 
+    // Binder for activities wishing to communicate with this service
+    private final IBinder binder = new LocalBinder();
+
     private AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeSpeedDistancePcc> mBSDResultReceiver = new AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeSpeedDistancePcc>() {
+
         @Override
         public void onResultReceived(AntPlusBikeSpeedDistancePcc result,
                                      RequestAccessResult resultCode, DeviceState initialDeviceState) {
@@ -693,22 +698,60 @@ public class CSCService extends Service {
         }
     };
 
+    /**
+     * Initialize searching for all supported sensors
+     */
     private void initAntPlus() {
+        Log.d(TAG, "requesting ANT+ access");
+
+        startSpeedSensorSearch();
+        startCadenceSensorSearch();
+        startHRSensorSearch();
+    }
+
+    /**
+     * Initializes the speed sensor search
+     */
+    protected void startSpeedSensorSearch() {
         //Release the old access if it exists
         if (bsdReleaseHandle != null)
             bsdReleaseHandle.close();
-        if (bcReleaseHandle != null)
-            bcReleaseHandle.close();
-        if (hrReleaseHandle != null)
-            hrReleaseHandle.close();
 
-        Log.d(TAG, "requesting ANT+ access");
         // starts speed sensor search
         bsdReleaseHandle = AntPlusBikeSpeedDistancePcc.requestAccess(this, 0, 0, false,
                 mBSDResultReceiver, mBSDDeviceStateChangeReceiver);
+
+        // send initial state for UI
+        Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
+        i.putExtra("bsd_service_status", "SEARCHING");
+        sendBroadcast(i);
+    }
+
+    /**
+     * Initializes the cadence sensor search
+     */
+    protected void startCadenceSensorSearch() {
+        //Release the old access if it exists
+        if (bcReleaseHandle != null)
+            bcReleaseHandle.close();
+
         // starts cadence sensor search
         bcReleaseHandle = AntPlusBikeCadencePcc.requestAccess(this, 0, 0, false,
                 mBCResultReceiver, mBCDeviceStateChangeReceiver);
+
+        // send initial state for UI
+        Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
+        i.putExtra("bc_service_status", "SEARCHING");
+        sendBroadcast(i);
+    }
+
+    /**
+     * Initializes the HR  sensor search
+     */
+    protected void startHRSensorSearch() {
+        //Release the old access if it exists
+        if (hrReleaseHandle != null)
+            hrReleaseHandle.close();
 
         // starts hr sensor search
         hrReleaseHandle = AntPlusHeartRatePcc.requestAccess(this, 0, 0,
@@ -716,8 +759,6 @@ public class CSCService extends Service {
 
         // send initial state for UI
         Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
-        i.putExtra("bsd_service_status", "SEARCHING");
-        i.putExtra("bc_service_status", "SEARCHING");
         i.putExtra("hr_service_status", "SEARCHING");
         sendBroadcast(i);
     }
@@ -725,7 +766,16 @@ public class CSCService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return binder;
+    }
+
+    /**
+     * Get the services for communicating with it
+     */
+    public class LocalBinder extends Binder {
+        CSCService getService() {
+            return CSCService.this;
+        }
     }
 
 }
