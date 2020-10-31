@@ -268,24 +268,21 @@ public class CSCService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "Service onStartCommand");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Intent notificationIntent = new Intent(this, CSCService.class);
-            PendingIntent pendingIntent =
-                    PendingIntent.getActivity(this, 0, notificationIntent, 0);
-
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_DEFAULT_IMPORTANCE, CHANNEL_DEFAULT_IMPORTANCE, importance);
-            channel.setDescription(CHANNEL_DEFAULT_IMPORTANCE);
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            assert notificationManager != null;
-            notificationManager.createNotificationChannel(channel);
+            // Create the PendingIntent
+            PendingIntent notifyPendingIntent = PendingIntent.getActivity(
+                    this,
+                    0,
+                    new Intent(this.getApplicationContext(),MainActivity.class),
+                    PendingIntent.FLAG_UPDATE_CURRENT);
 
             // build a notification
             Notification notification =
                     new Notification.Builder(this, CHANNEL_DEFAULT_IMPORTANCE)
                             .setContentTitle(getText(R.string.app_name))
                             .setContentText("Active")
-                            //.setSmallIcon(R.drawable.icon)
-                            .setContentIntent(pendingIntent)
+                            .setSmallIcon(R.drawable.ic_notification_icon)
+                            .setAutoCancel(true)
+                            .setContentIntent(notifyPendingIntent)
                             .setTicker(getText(R.string.app_name))
                             .build();
 
@@ -294,6 +291,7 @@ public class CSCService extends Service {
             Notification notification = new NotificationCompat.Builder(this, CHANNEL_DEFAULT_IMPORTANCE)
                     .setContentTitle(getString(R.string.app_name))
                     .setContentText("Active")
+                    .setSmallIcon(R.drawable.ic_notification_icon)
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                     .setAutoCancel(true)
                     .build();

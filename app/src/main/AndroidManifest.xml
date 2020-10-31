@@ -14,6 +14,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
+        android:launchMode="singleTop"
         android:theme="@style/AppTheme">
         <activity android:name="idv.markkuo.cscblebridge.MainActivity">
             <intent-filter>
