@@ -24,6 +24,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -95,7 +96,11 @@ public class CSCService extends Service {
     // for onCreate() failure case
     private boolean initialised = false;
 
+    // Binder for activities wishing to communicate with this service
+    private final IBinder binder = new LocalBinder();
+
     private AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeSpeedDistancePcc> mBSDResultReceiver = new AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeSpeedDistancePcc>() {
+
         @Override
         public void onResultReceived(AntPlusBikeSpeedDistancePcc result,
                                      RequestAccessResult resultCode, DeviceState initialDeviceState) {
@@ -263,24 +268,21 @@ public class CSCService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "Service onStartCommand");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Intent notificationIntent = new Intent(this, CSCService.class);
-            PendingIntent pendingIntent =
-                    PendingIntent.getActivity(this, 0, notificationIntent, 0);
-
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_DEFAULT_IMPORTANCE, CHANNEL_DEFAULT_IMPORTANCE, importance);
-            channel.setDescription(CHANNEL_DEFAULT_IMPORTANCE);
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            assert notificationManager != null;
-            notificationManager.createNotificationChannel(channel);
+            // Create the PendingIntent
+            PendingIntent notifyPendingIntent = PendingIntent.getActivity(
+                    this,
+                    0,
+                    new Intent(this.getApplicationContext(),MainActivity.class),
+                    PendingIntent.FLAG_UPDATE_CURRENT);
 
             // build a notification
             Notification notification =
                     new Notification.Builder(this, CHANNEL_DEFAULT_IMPORTANCE)
                             .setContentTitle(getText(R.string.app_name))
                             .setContentText("Active")
-                            //.setSmallIcon(R.drawable.icon)
-                            .setContentIntent(pendingIntent)
+                            .setSmallIcon(R.drawable.ic_notification_icon)
+                            .setAutoCancel(true)
+                            .setContentIntent(notifyPendingIntent)
                             .setTicker(getText(R.string.app_name))
                             .build();
 
@@ -289,6 +291,7 @@ public class CSCService extends Service {
             Notification notification = new NotificationCompat.Builder(this, CHANNEL_DEFAULT_IMPORTANCE)
                     .setContentTitle(getString(R.string.app_name))
                     .setContentText("Active")
+                    .setSmallIcon(R.drawable.ic_notification_icon)
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                     .setAutoCancel(true)
                     .build();
@@ -693,22 +696,60 @@ public class CSCService extends Service {
         }
     };
 
+    /**
+     * Initialize searching for all supported sensors
+     */
     private void initAntPlus() {
+        Log.d(TAG, "requesting ANT+ access");
+
+        startSpeedSensorSearch();
+        startCadenceSensorSearch();
+        startHRSensorSearch();
+    }
+
+    /**
+     * Initializes the speed sensor search
+     */
+    protected void startSpeedSensorSearch() {
         //Release the old access if it exists
         if (bsdReleaseHandle != null)
             bsdReleaseHandle.close();
-        if (bcReleaseHandle != null)
-            bcReleaseHandle.close();
-        if (hrReleaseHandle != null)
-            hrReleaseHandle.close();
 
-        Log.d(TAG, "requesting ANT+ access");
         // starts speed sensor search
         bsdReleaseHandle = AntPlusBikeSpeedDistancePcc.requestAccess(this, 0, 0, false,
                 mBSDResultReceiver, mBSDDeviceStateChangeReceiver);
+
+        // send initial state for UI
+        Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
+        i.putExtra("bsd_service_status", "SEARCHING");
+        sendBroadcast(i);
+    }
+
+    /**
+     * Initializes the cadence sensor search
+     */
+    protected void startCadenceSensorSearch() {
+        //Release the old access if it exists
+        if (bcReleaseHandle != null)
+            bcReleaseHandle.close();
+
         // starts cadence sensor search
         bcReleaseHandle = AntPlusBikeCadencePcc.requestAccess(this, 0, 0, false,
                 mBCResultReceiver, mBCDeviceStateChangeReceiver);
+
+        // send initial state for UI
+        Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
+        i.putExtra("bc_service_status", "SEARCHING");
+        sendBroadcast(i);
+    }
+
+    /**
+     * Initializes the HR  sensor search
+     */
+    protected void startHRSensorSearch() {
+        //Release the old access if it exists
+        if (hrReleaseHandle != null)
+            hrReleaseHandle.close();
 
         // starts hr sensor search
         hrReleaseHandle = AntPlusHeartRatePcc.requestAccess(this, 0, 0,
@@ -716,8 +757,6 @@ public class CSCService extends Service {
 
         // send initial state for UI
         Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
-        i.putExtra("bsd_service_status", "SEARCHING");
-        i.putExtra("bc_service_status", "SEARCHING");
         i.putExtra("hr_service_status", "SEARCHING");
         sendBroadcast(i);
     }
@@ -725,7 +764,16 @@ public class CSCService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return binder;
+    }
+
+    /**
+     * Get the services for communicating with it
+     */
+    public class LocalBinder extends Binder {
+        CSCService getService() {
+            return CSCService.this;
+        }
     }
 
 }
