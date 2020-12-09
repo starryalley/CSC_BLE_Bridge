@@ -96,6 +96,9 @@ public class CSCService extends Service {
     // for onCreate() failure case
     private boolean initialised = false;
 
+    // Used to flag if we have a combined speed and cadence sensor and have already re-connected as combined
+    private boolean combinedSensorConnected = false;
+
     // Binder for activities wishing to communicate with this service
     private final IBinder binder = new LocalBinder();
 
@@ -144,6 +147,16 @@ public class CSCService extends Service {
                 }
             });
 
+            if (bsdPcc.isSpeedAndCadenceCombinedSensor() && !combinedSensorConnected) {
+                // reconnect cadence sensor as combined sensor
+                if (bcReleaseHandle != null) {
+                    bcReleaseHandle.close();
+                }
+                combinedSensorConnected = true;
+                bcReleaseHandle = AntPlusBikeCadencePcc.requestAccess(getApplicationContext(), bsdPcc.getAntDeviceNumber(), 0, true,
+                        mBCResultReceiver, mBCDeviceStateChangeReceiver);
+            }
+
         }
     };
 
@@ -190,6 +203,16 @@ public class CSCService extends Service {
                     lastCadenceTimestamp = estTimestamp;
                 }
             });
+
+            if (bcPcc.isSpeedAndCadenceCombinedSensor() && !combinedSensorConnected) {
+                // reconnect speed sensor as a combined sensor
+                if (bsdReleaseHandle != null) {
+                    bsdReleaseHandle.close();
+                }
+                combinedSensorConnected = true;
+                bsdReleaseHandle = AntPlusBikeSpeedDistancePcc.requestAccess(getApplicationContext(), bcPcc.getAntDeviceNumber(), 0, true,
+                        mBSDResultReceiver, mBSDDeviceStateChangeReceiver);
+            }
         }
     };
 
@@ -394,6 +417,8 @@ public class CSCService extends Service {
 
             if (hrReleaseHandle != null)
                 hrReleaseHandle.close();
+
+            combinedSensorConnected = false;
         }
     }
 
@@ -714,6 +739,8 @@ public class CSCService extends Service {
         //Release the old access if it exists
         if (bsdReleaseHandle != null)
             bsdReleaseHandle.close();
+
+        combinedSensorConnected = false;
 
         // starts speed sensor search
         bsdReleaseHandle = AntPlusBikeSpeedDistancePcc.requestAccess(this, 0, 0, false,
