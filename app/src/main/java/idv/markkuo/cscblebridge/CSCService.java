@@ -24,6 +24,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -32,6 +33,7 @@ import android.os.ParcelUuid;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
 import com.dsi.ant.plugins.antplus.pcc.AntPlusBikeCadencePcc;
@@ -53,6 +55,7 @@ public class CSCService extends Service {
     private static final String TAG = CSCService.class.getSimpleName();
     private static final int ONGOING_NOTIFICATION_ID = 9999;
     private static final String CHANNEL_DEFAULT_IMPORTANCE = "csc_ble_channel";
+    private static final String MAIN_CHANNEL_NAME = "CscService";
 
     // Ant+ sensors
     private AntPlusBikeSpeedDistancePcc bsdPcc = null;
@@ -291,6 +294,8 @@ public class CSCService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "Service onStartCommand");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createNotificationChannel(CHANNEL_DEFAULT_IMPORTANCE, MAIN_CHANNEL_NAME);
+
             // Create the PendingIntent
             PendingIntent notifyPendingIntent = PendingIntent.getActivity(
                     this,
@@ -322,6 +327,15 @@ public class CSCService extends Service {
             startForeground(ONGOING_NOTIFICATION_ID, notification);
         }
         return Service.START_NOT_STICKY;
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private void createNotificationChannel(String channelId, String channelName) {
+        NotificationChannel channel = new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW);
+        channel.setLightColor(Color.BLUE);
+        channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        manager.createNotificationChannel(channel);
     }
 
     private boolean checkBluetoothSupport(BluetoothAdapter bluetoothAdapter) {
