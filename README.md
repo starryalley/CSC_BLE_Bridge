@@ -29,6 +29,7 @@ Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart R
 - Samsung Galaxy S8 (Android 9)
 - Samsung Galaxy J5 2016 - Thanks [louisJ20](https://github.com/louisJ20)
 - Samsung Galaxy S9 (Android 10) - Thanks [pinkemma](https://github.com/pinkemma)
+- One Plus 7 Pro (Android 10)
 
 ## ANT+ Speed/Cadence sensors
 - [Garmin gen 1 ANT+ only speed and cadence sensor](https://buy.garmin.com/en-MW/ssa/p/146897)
@@ -37,6 +38,7 @@ Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart R
 ## ANT+ Heart Rate sensors
 - [Garmin HRM-Run](https://buy.garmin.com/en-AU/AU/p/530376)
 - Garmin Fenix 5s with broadcasting mode on (ANT+ signal) - Thanks [pinkemma](https://github.com/pinkemma)
+- Garmin 935 with broadcasting mode on (ANT+ signal)
 
 ## Apps that use BLE sensors
 - Zwift (Mac version)
