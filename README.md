@@ -29,7 +29,8 @@ Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart R
 - Samsung Galaxy S8 (Android 9)
 - Samsung Galaxy J5 2016 - Thanks [louisJ20](https://github.com/louisJ20)
 - Samsung Galaxy S9 (Android 10) - Thanks [pinkemma](https://github.com/pinkemma)
-- One Plus 7 Pro (Android 10)
+- One Plus 7 Pro (Android 10) - Thanks [michaelrhughes](https://github.com/michaelrhughes)
+- Nokia 7 Plus - Thanks [leaskovski](https://github.com/leaskovski)
 
 ## ANT+ Speed/Cadence sensors
 - [Garmin gen 1 ANT+ only speed and cadence sensor](https://buy.garmin.com/en-MW/ssa/p/146897)
@@ -43,11 +44,8 @@ Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart R
 ## Apps that use BLE sensors
 - Zwift (Mac version)
 - The Sufferfest (Mac version)
+- theoretically all other apps that use Speed/Cadence/Heart Rate BLE sensors
 
-
-# TODO
-- limited testing. See Tested devices list above.
-- more sensors?
 
 # Known issues
 
