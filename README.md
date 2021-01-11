@@ -6,8 +6,15 @@ The app will act as a Cycling speed/cadence and/or HR BLE sensor so other BLE de
 
 ![Screenshot](screenshots/screenshot_2.jpg)
 
+# Install
 
-## Details
+I didn't bother to add this to Google play store. It's completely free and open. Feel free to build the code yourself and try it out.
+
+However I've included a [release apk here](https://github.com/starryalley/CSC_BLE_Bridge/blob/master/app/release/app-release.apk). Feel free to use the apk to test on your ANT+ supported phones:
+
+```adb install -r /path/to/app-release.apk```
+
+# Details
 
 This is an Android app which reads ANT+ cycling speed/cadence (CSC) and/or heart rate sensors in the background (actually in an Android foreground service), and advertises itself as a `Bluetooth Low Energy (BLE)` device which implements `Cycling Speed and Cadence Profile (CSCP)` and `Heart Rate Profile (HRP)` so that other devices can see this Android device as a Cycling Speed and Cadence Bluetooth and/or Heart Rate BLE sensor.
 
