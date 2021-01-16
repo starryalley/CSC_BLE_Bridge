@@ -461,7 +461,7 @@ public class CSCService extends Service {
 
         AdvertiseData data = new AdvertiseData.Builder()
                 .setIncludeDeviceName(true)
-                .setIncludeTxPowerLevel(true)
+                .setIncludeTxPowerLevel(false)
                 .addServiceUuid(new ParcelUuid(CSCProfile.CSC_SERVICE))
                 .addServiceUuid(new ParcelUuid(CSCProfile.HR_SERVICE))
                 .build();
