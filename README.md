@@ -37,7 +37,8 @@ Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart R
 - Samsung Galaxy J5 2016 - Thanks [louisJ20](https://github.com/louisJ20)
 - Samsung Galaxy S9 (Android 10) - Thanks [pinkemma](https://github.com/pinkemma)
 - One Plus 7 Pro (Android 10) - Thanks [michaelrhughes](https://github.com/michaelrhughes)
-- Nokia 7 Plus (not sure, to be tested. 12/1/2021) - Thanks [leaskovski](https://github.com/leaskovski)
+- Nokia 7 Plus (Android 10) - Thanks [leaskovski](https://github.com/leaskovski)
+- Nexus 5 (CyanogenMod 13 and Ant+ Enabler) - Thanks [leaskovski](https://github.com/leaskovski)
 - OnePlus 5T (Android 10) - Thanks [philharle](https://github.com/philharle)
 - Galaxy Note 9 - Thanks [larryb84](https://github.com/larryb84)
 
