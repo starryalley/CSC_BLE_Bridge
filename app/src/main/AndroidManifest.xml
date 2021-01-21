@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
         <service android:name="idv.markkuo.cscblebridge.CSCService"
-            android:stopWithTask="true"
+            android:stopWithTask="false"
             android:label="CSCService">
         </service>
     </application>
