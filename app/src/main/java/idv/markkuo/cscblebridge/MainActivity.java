@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity  {
     private MainActivityReceiver receiver;
     private boolean mBound = false;
     private CSCService mService;
+    private Intent mServiceIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,24 +59,27 @@ public class MainActivity extends AppCompatActivity  {
         btn_service.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent i = new Intent(getApplicationContext(), CSCService.class);
                 if (!serviceStarted) {
+                    mServiceIntent = new Intent(getApplicationContext(), CSCService.class);
                     Log.d(TAG, "Starting Service");
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                        MainActivity.this.startForegroundService(i);
+                        MainActivity.this.startForegroundService(mServiceIntent);
                     else
-                        MainActivity.this.startService(i);
-                } else {
+                        MainActivity.this.startService(mServiceIntent);
+
+                    // Bind to the service so we can interact with it
+                    if (!bindService(mServiceIntent, connection, Context.BIND_AUTO_CREATE)) {
+                        Log.d(TAG, "Failed to bind to service");
+                    } else {
+                        mBound = true;
+                    }
+                }
+                else {
                     Log.d(TAG, "Stopping Service");
-                    MainActivity.this.stopService(i);
+                    unbindService();
+                    MainActivity.this.stopService(mServiceIntent);
                 }
 
-                // Bind to the service so we can interact with it
-                if (!bindService(i, connection, Context.BIND_AUTO_CREATE)) {
-                    Log.d(TAG, "Failed to bind to service");
-                } else {
-                    mBound = true;
-                }
 
                 serviceStarted = !serviceStarted;
                 updateButtonState();
