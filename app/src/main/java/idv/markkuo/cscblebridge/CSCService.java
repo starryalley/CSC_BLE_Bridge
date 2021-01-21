@@ -459,15 +459,18 @@ public class CSCService extends Service {
                 .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
                 .build();
 
-        AdvertiseData data = new AdvertiseData.Builder()
-                .setIncludeDeviceName(true)
-                .setIncludeTxPowerLevel(false)
+        AdvertiseData advData = new AdvertiseData.Builder()
+                .setIncludeTxPowerLevel(true)
                 .addServiceUuid(new ParcelUuid(CSCProfile.CSC_SERVICE))
                 .addServiceUuid(new ParcelUuid(CSCProfile.HR_SERVICE))
                 .build();
 
+        AdvertiseData advScanResponse = new AdvertiseData.Builder()
+                .setIncludeDeviceName(true)
+                .build();
+
         mBluetoothLeAdvertiser
-                .startAdvertising(settings, data, mAdvertiseCallback);
+                .startAdvertising(settings, advData, advScanResponse, mAdvertiseCallback);
     }
 
     /**
