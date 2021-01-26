@@ -8,9 +8,9 @@ The app will act as a Cycling speed/cadence and/or HR BLE sensor so other BLE de
 
 # Install
 
-I didn't bother to add this to Google play store. It's completely free and open. Feel free to build the code yourself and try it out.
+[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" width="250">](https://apt.izzysoft.de/fdroid/index/apk/idv.markkuo.cscblebridge)
 
-However I've included a [release apk here](https://github.com/starryalley/CSC_BLE_Bridge/blob/master/app/release/app-release.apk). Feel free to use the apk to test on your ANT+ supported phones:
+Or you can download the apk in [release](https://github.com/starryalley/CSC_BLE_Bridge/releases) and use `adb` to install:
 
 ```adb install -r /path/to/app-release.apk```
 
