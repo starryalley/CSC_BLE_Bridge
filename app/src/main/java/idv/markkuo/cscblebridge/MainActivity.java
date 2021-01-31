@@ -22,9 +22,9 @@ import android.widget.TextView;
 public class MainActivity extends AppCompatActivity  {
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    private TextView tv_speedSensorState, tv_cadenceSensorState, tv_hrSensorState,
+    private TextView tv_speedSensorState, tv_cadenceSensorState, tv_hrSensorState, tv_runSensorState,
             tv_speedSensorTimestamp, tv_cadenceSensorTimestamp, tv_hrSensorTimestamp,
-            tv_speed, tv_cadence, tv_hr;
+            tv_runSensorTimestamp, tv_speed, tv_cadence, tv_hr, tv_runSpeed, tv_runCadence;
     private Button btn_service;
 
     private boolean serviceStarted = false;
@@ -41,14 +41,18 @@ public class MainActivity extends AppCompatActivity  {
         tv_speedSensorState = findViewById(R.id.SpeedSensorStateText);
         tv_cadenceSensorState = findViewById(R.id.CadenceSensorStateText);
         tv_hrSensorState = findViewById(R.id.HRSensorStateText);
+        tv_runSensorState = findViewById(R.id.RunSensorStateText);
 
         tv_speedSensorTimestamp = findViewById(R.id.SpeedTimestampText);
         tv_cadenceSensorTimestamp = findViewById(R.id.CadenceTimestampText);
         tv_hrSensorTimestamp = findViewById(R.id.HRTimestampText);
+        tv_runSensorTimestamp = findViewById(R.id.RunTimestampText);
 
         tv_speed = findViewById(R.id.SpeedText);
         tv_cadence = findViewById(R.id.CadenceText);
         tv_hr = findViewById(R.id.HRText);
+        tv_runSpeed = findViewById(R.id.RunSpeedText);
+        tv_runCadence = findViewById(R.id.RunCadenceText);
         btn_service = findViewById(R.id.ServiceButton);
 
         if (isServiceRunning()) {
@@ -181,9 +185,11 @@ public class MainActivity extends AppCompatActivity  {
         tv_speedSensorState.setText(getText(R.string.no_data));
         tv_cadenceSensorState.setText(getText(R.string.no_data));
         tv_hrSensorState.setText(getText(R.string.no_data));
+        tv_runSensorState.setText(getText(R.string.no_data));
         tv_speedSensorTimestamp.setText(getText(R.string.no_data));
         tv_cadenceSensorTimestamp.setText(getText(R.string.no_data));
         tv_hrSensorTimestamp.setText(getText(R.string.no_data));
+        tv_runSensorTimestamp.setText(getText(R.string.no_data));
         tv_speed.setText(getText(R.string.no_data));
         tv_cadence.setText(getText(R.string.no_data));
         tv_hr.setText(getText(R.string.no_data));
@@ -207,12 +213,16 @@ public class MainActivity extends AppCompatActivity  {
             final String statusBSD = intent.getStringExtra("bsd_service_status");
             final String statusBC = intent.getStringExtra("bc_service_status");
             final String statusHR = intent.getStringExtra("hr_service_status");
+            final String statusRsc = intent.getStringExtra("ss_service_status");
             final long speedTimestamp = intent.getLongExtra("speed_timestamp", -1);
             final long cadenceTimestamp = intent.getLongExtra("cadence_timestamp", -1);
             final long hrTimestamp = intent.getLongExtra("hr_timestamp", -1);
+            final long runTimestamp = intent.getLongExtra("ss_stride_count_timestamp", -1);
             final float speed = intent.getFloatExtra("speed", -1.0f);
             final int cadence = intent.getIntExtra("cadence", -1);
             final int hr = intent.getIntExtra("hr", -1);
+            final float runSpeed = intent.getFloatExtra("ss_speed", -1);
+            final long runStrideCount = intent.getLongExtra("ss_stride_count", -1);
 
             runOnUiThread(new Runnable() {
                 @SuppressLint("DefaultLocale")
@@ -224,18 +234,27 @@ public class MainActivity extends AppCompatActivity  {
                         tv_cadenceSensorState.setText(statusBC);
                     if (statusHR != null)
                         tv_hrSensorState.setText(statusHR);
+                    if (statusRsc != null)
+                        tv_runSensorState.setText(statusRsc);
                     if (speedTimestamp >= 0)
                         tv_speedSensorTimestamp.setText(String.valueOf(speedTimestamp));
                     if (cadenceTimestamp >= 0)
                         tv_cadenceSensorTimestamp.setText(String.valueOf(cadenceTimestamp));
                     if (hrTimestamp >= 0)
                         tv_hrSensorTimestamp.setText(String.valueOf(hrTimestamp));
+                    if (runTimestamp >= 0)
+                        tv_runSensorTimestamp.setText(String.valueOf(runTimestamp));
                     if (speed >= 0.0f)
                         tv_speed.setText(String.format("%.02f", speed));
                     if (cadence >= 0)
                         tv_cadence.setText(String.valueOf(cadence));
                     if (hr >= 0)
                         tv_hr.setText(String.valueOf(hr));
+                    if (runSpeed >= 0)
+                        tv_runSpeed.setText(String.format("%.02f", runSpeed * 3.6));
+                    if (runStrideCount >= 0) {
+                        tv_runCadence.setText(String.valueOf(runStrideCount * 2));
+                    }
                 }
             });
         }

@@ -1,8 +1,8 @@
 
 # What
 
-This is an Ant+ to BLE (Bluetooth Low Energy) Bridging app for ANT+ Cycling Speed and Cadence (CSC) sensors and ANT+ heart rate sensors.
-The app will act as a Cycling speed/cadence and/or HR BLE sensor so other BLE device (phone, PC, Mac, tablet) can reads data from ANT+ sensors.
+This is an Ant+ to BLE (Bluetooth Low Energy) Bridging app for ANT+ Cycling Speed and Cadence (CSC) sensors, ANT+ heart rate sensors, and ANT+ Stride based speed and distance sensors.
+The app will act as a Cycling speed/cadence and/or HR BLE sensor and/or BLE Running speed/cadence so other BLE device (phone, PC, Mac, tablet) can reads data from ANT+ sensors.
 
 ![Screenshot](screenshots/screenshot_2.jpg)
 
@@ -16,7 +16,7 @@ Or you can download the apk in [release](https://github.com/starryalley/CSC_BLE_
 
 # Details
 
-This is an Android app which reads ANT+ cycling speed/cadence (CSC) and/or heart rate sensors in the background (actually in an Android foreground service), and advertises itself as a `Bluetooth Low Energy (BLE)` device which implements `Cycling Speed and Cadence Profile (CSCP)` and `Heart Rate Profile (HRP)` so that other devices can see this Android device as a Cycling Speed and Cadence Bluetooth and/or Heart Rate BLE sensor.
+This is an Android app which reads ANT+ cycling speed/cadence (CSC), heart rate sensors, and/or stride based speed and distance (SDM) sensors in the background (actually in an Android foreground service), and advertises itself as a `Bluetooth Low Energy (BLE)` device which implements `Cycling Speed and Cadence Profile (CSCP)`, `Heart Rate Profile (HRP)`, and/or `Running Speed and Cadence (rsc)` so that other devices can see this Android device as a Cycling Speed & Cadence Bluetooth, Heart Rate BLE sensor and/or Running foot pod sensor.
 
 This is useful when you only have ANT+ CSC/HR sensors but you want to connect to them as BLE sensors (provided that you don't have an USB ANT+ stick around but happen to have an ANT+ enabled Android device like a Samsung phone).
 
@@ -54,10 +54,14 @@ Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart R
 - Garmin Fenix 6 with broadcasting mode on (ANT+ signal) 
 - Garmin HRM2 - Thanks [larryb84](https://github.com/larryb84)
 
+## ANT+ Stride-based Speed and Distance Monitor (SDM) sensors
+- Garmin Foot Pod
+
 ## Apps that use BLE sensors
 - Zwift (Mac/iPad/Windows version)
 - The Sufferfest (Mac version)
-- theoretically all other apps that use Speed/Cadence/Heart Rate BLE sensors
+- Zwift (iPad Pro)
+- theoretically all other apps that use Bike Speed/Cadence or Heart Rate or Run Speed/Cadence BLE sensors
 
 
 # Known issues
