@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="broadcast_button_start_end">5dp</dimen>
+    <dimen name="broadcast_button_end_padding">10dp</dimen>
+    <dimen name="card_default_padding">10dp</dimen>
+</resources>
