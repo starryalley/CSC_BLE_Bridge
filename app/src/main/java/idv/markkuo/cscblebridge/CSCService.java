@@ -542,6 +542,9 @@ public class CSCService extends Service {
             if (hrReleaseHandle != null)
                 hrReleaseHandle.close();
 
+            if (ssReleaseHandle != null)
+                ssReleaseHandle.close();
+
             combinedSensorConnected = false;
         }
     }
