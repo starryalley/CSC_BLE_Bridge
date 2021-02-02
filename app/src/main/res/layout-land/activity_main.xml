@@ -37,6 +37,13 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/hr_sensor" />
+
+            <TextView
+                android:id="@+id/RunSensorText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/run_sensor" />
         </LinearLayout>
 
         <LinearLayout
@@ -62,6 +69,14 @@
 
             <TextView
                 android:id="@+id/HRSensorStateText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/no_data"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/RunSensorStateText"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -94,6 +109,12 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/timestamp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/timestamp" />
         </LinearLayout>
 
         <LinearLayout
@@ -119,6 +140,15 @@
 
             <TextView
                 android:id="@+id/HRTimestampText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/no_data"
+                android:textSize="20sp" />
+
+
+            <TextView
+                android:id="@+id/RunTimestampText"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -155,6 +185,18 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/heart_rate" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/run_speed" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/run_cadence" />
         </LinearLayout>
 
         <LinearLayout
@@ -181,6 +223,21 @@
 
             <TextView
                 android:id="@+id/HRText"
+                android:layout_width="0sp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="@string/no_data"
+                android:textSize="64sp" />
+
+            <TextView
+                android:id="@+id/RunSpeedText"
+                android:layout_width="0sp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="@string/no_data"
+                android:textSize="64sp" />
+            <TextView
+                android:id="@+id/RunCadenceText"
                 android:layout_width="0sp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"

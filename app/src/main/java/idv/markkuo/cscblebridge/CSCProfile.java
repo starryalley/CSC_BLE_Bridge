@@ -3,8 +3,10 @@ package idv.markkuo.cscblebridge;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
+import android.util.Base64;
 import android.util.Log;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +37,12 @@ public class CSCProfile {
     public static UUID HR_SERVICE = UUID.fromString("0000180D-0000-1000-8000-00805f9b34fb");
     public static UUID HR_MEASUREMENT = UUID.fromString("00002A37-0000-1000-8000-00805f9b34fb");
 
+    /** Running Speed and Cadence */
+    public static UUID RSC_SERVICE = UUID.fromString("00001814-0000-1000-8000-00805f9b34fb");
+    public static UUID RSC_MEASUREMENT = UUID.fromString("00002A53-0000-1000-8000-00805f9b34fb");
+    public static UUID RSC_FEATURE = UUID.fromString("00002A54-0000-1000-8000-00805f9b34fb");
+    private static final byte RSC_NO_FEATURES = 0b00000000;
+
     /** supported CSC Feature bit: Speed sensor */
     public static final byte CSC_FEATURE_WHEEL_REV = 0x1;
     /** supported CSC Feature bit: Cadence sensor */
@@ -45,6 +53,8 @@ public class CSCProfile {
 
     // default implemented features
     private static byte currentFeature = CSC_FEATURE_WHEEL_REV | CSC_FEATURE_CRANK_REV;
+
+    private static byte rscFeature = RSC_NO_FEATURES;
 
     /**
      * Return a configured {@link BluetoothGattService} instance for the
@@ -101,6 +111,33 @@ public class CSCProfile {
 
         return service;
     }
+
+
+    public static BluetoothGattService createRscService() {
+        BluetoothGattService service = new BluetoothGattService(RSC_SERVICE,
+                BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        // CSC Measurement characteristic
+        BluetoothGattCharacteristic rscMeasurement = new BluetoothGattCharacteristic(RSC_MEASUREMENT,
+                //Read-only characteristic, supports notifications
+                BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+                BluetoothGattCharacteristic.PERMISSION_READ);
+
+        BluetoothGattDescriptor configDescriptor = new BluetoothGattDescriptor(CLIENT_CONFIG,
+                //Read/write descriptor
+                BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
+        rscMeasurement.addDescriptor(configDescriptor);
+
+        // CSC Feature characteristic
+        BluetoothGattCharacteristic rscFeature = new BluetoothGattCharacteristic(RSC_FEATURE,
+                //Read-only characteristic
+                BluetoothGattCharacteristic.PROPERTY_READ,
+                BluetoothGattCharacteristic.PERMISSION_READ);
+        service.addCharacteristic(rscFeature);
+
+
+        service.addCharacteristic(rscMeasurement);
+        return service;
+    }
     // https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.csc_measurement.xml
     public static byte[] getMeasurement(long cumulativeWheelRevolution, int lastWheelEventTime,
                                         long cumulativeCrankRevolution, int lastCrankEventTime) {
@@ -152,6 +189,48 @@ public class CSCProfile {
         Log.v(TAG, "HR Measurement: 0x" + bytesToHex(byteArray));
         return byteArray;
     }
+
+    // https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.rsc_measurement.xml
+    public static byte[] getRsc(long lastSSDistance, float lastSSSpeed, long stridePerMin) {
+        List<Byte> data = new ArrayList<>();
+
+        // Instantanious stride length, total distance and walking or running could be calculated, but are not supported for now
+        data.add((byte) 0b00000000);
+
+        // Instantaneous Speed; Unit is in m/s with a resolution of 1/256 s (uint16)
+        int wholeNumber = (int) lastSSSpeed;
+        byte decimalPlaces = binaryDecimalToByte(lastSSSpeed, wholeNumber);
+        data.add(decimalPlaces);
+        data.add((byte) (int) wholeNumber);
+
+        // Instantanious Cadence, Unit is in 1/minute (or RPM) with a resolutions of 1 1/min (or 1 RPM) (uint8)
+        data.add((byte) stridePerMin);
+
+        // convert to primitive byte array
+        byte[] byteArray = new byte[data.size()];
+        for (int i = 0; i < data.size(); i++) {
+            byteArray[i] = data.get(i);
+        }
+        return byteArray;
+    }
+
+    private static byte binaryDecimalToByte(float lastSSSpeed, int wholeNumber) {
+        double number;
+        double fraction;
+        int integralPart;
+        int b = 0;
+        fraction = lastSSSpeed - wholeNumber;
+        for (int i = 7; i >= 0; i--) {
+            integralPart = (int) (fraction * 2);
+            if (integralPart == 1) {
+                b = b | 0b1 << i;
+            }
+            number = fraction * 2;
+            fraction = number - integralPart;
+        }
+        return (byte) b;
+    }
+
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
     private static String bytesToHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
@@ -167,6 +246,13 @@ public class CSCProfile {
     public static byte[] getFeature() {
         byte[] data = new byte[2];
         data[0] = currentFeature; // always leave the second byte 0
+        return data;
+    }
+
+    // https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.rsc_feature.xml
+    public static byte[] getRscFeature() {
+        byte[] data = new byte[1];
+        data[0] = rscFeature;
         return data;
     }
 }

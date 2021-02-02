@@ -31,6 +31,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.ParcelUuid;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -39,6 +40,7 @@ import androidx.core.app.NotificationCompat;
 import com.dsi.ant.plugins.antplus.pcc.AntPlusBikeCadencePcc;
 import com.dsi.ant.plugins.antplus.pcc.AntPlusBikeSpeedDistancePcc;
 import com.dsi.ant.plugins.antplus.pcc.AntPlusHeartRatePcc;
+import com.dsi.ant.plugins.antplus.pcc.AntPlusStrideSdmPcc;
 import com.dsi.ant.plugins.antplus.pcc.defines.DeviceState;
 import com.dsi.ant.plugins.antplus.pcc.defines.EventFlag;
 import com.dsi.ant.plugins.antplus.pcc.defines.RequestAccessResult;
@@ -49,7 +51,10 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
 
 public class CSCService extends Service {
     private static final String TAG = CSCService.class.getSimpleName();
@@ -64,6 +69,8 @@ public class CSCService extends Service {
     private PccReleaseHandle<AntPlusBikeCadencePcc> bcReleaseHandle = null;
     private AntPlusHeartRatePcc hrPcc = null;
     private PccReleaseHandle<AntPlusHeartRatePcc> hrReleaseHandle = null;
+    private AntPlusStrideSdmPcc ssPcc = null;
+    private PccReleaseHandle<AntPlusStrideSdmPcc> ssReleaseHandle = null;
 
     // Checks that the callback that is done after a BluetoothGattServer.addService() has been complete.
     // More services cannot be added until the callback has completed successfully
@@ -92,9 +99,15 @@ public class CSCService extends Service {
     private long lastSpeedTimestamp = 0;
     private long lastCadenceTimestamp = 0;
     private long lastHRTimestamp = 0;
+    private long lastSSDistanceTimestamp = 0;
+    private long lastSSSpeedTimestamp = 0;
+    private long lastSSStrideCountTimestamp = 0;
     private float lastSpeed = 0;
     private int lastCadence = 0;
     private int lastHR = 0;
+    private long lastSSDistance = 0;
+    private float lastSSSpeed = 0;
+    private long lastStridePerMinute = 0;
 
     // for onCreate() failure case
     private boolean initialised = false;
@@ -250,10 +263,103 @@ public class CSCService extends Service {
         }
     };
 
+    private AntPluginPcc.IPluginAccessResultReceiver<AntPlusStrideSdmPcc> mSSResultReceiver = new AntPluginPcc.IPluginAccessResultReceiver<AntPlusStrideSdmPcc>() {
+        @Override
+        public void onResultReceived(AntPlusStrideSdmPcc result, RequestAccessResult resultCode, DeviceState initialDeviceState) {
+            if (resultCode == RequestAccessResult.SUCCESS) {
+                ssPcc = result;
+                Log.d(TAG, result.getDeviceName() + ": " + initialDeviceState);
+                subscribeToEvents();
+            } else if (resultCode == RequestAccessResult.USER_CANCELLED) {
+                Log.d(TAG, "SS Closed:" + resultCode);
+            } else {
+                Log.w(TAG, "SS state changed: " + initialDeviceState + ", resultCode:" + resultCode);
+            }
+
+            // send broadcast
+            Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
+            i.putExtra("ss_service_status", initialDeviceState.toString() + "\n(" + resultCode + ")");
+            sendBroadcast(i);
+        }
+
+        private void subscribeToEvents() {
+            // https://www.thisisant.com/developer/ant-plus/device-profiles#528_tab
+            ssPcc.subscribeStrideCountEvent(new AntPlusStrideSdmPcc.IStrideCountReceiver() {
+                private static final int TEN_SECONDS_IN_MS = 10000;
+                private static final int FALLBACK_MAX_LIST_SIZE = 500;
+                private static final float ONE_MINUTE_IN_MS = 60000f;
+
+                private final LinkedList<Pair<Long, Long>> strideList = new LinkedList<>();
+                private final Semaphore lock = new Semaphore(1);
+                @Override
+                public void onNewStrideCount(long estTimestamp, EnumSet<EventFlag> eventFlags, final long cumulativeStrides) {
+                    new Thread(() -> {
+                        try {
+                            lock.acquire();
+                            // Calculate number of strides per minute, updates happen around every 500 ms, this number
+                            // may be off by that amount but it isn't too significant
+                            strideList.addFirst(new Pair<>(estTimestamp, cumulativeStrides));
+                            long strideCount = 0;
+                            boolean valueFound = false;
+                            int i = 0;
+                            for (Pair<Long, Long> p : strideList) {
+                                // Cadence over the last 10 seconds
+                                if (estTimestamp - p.first >= TEN_SECONDS_IN_MS) {
+                                    valueFound = true;
+                                    strideCount = calculateStepsPerMin(estTimestamp, cumulativeStrides, p);
+                                    break;
+                                } else if (i + 1 == strideList.size()) {
+                                    // No value was found yet, it has not been 10 seconds. Give an early rough estimate
+                                    strideCount = calculateStepsPerMin(estTimestamp, cumulativeStrides, p);
+                                }
+
+                                i++;
+                            }
+                            while ((valueFound && strideList.size() >= i + 1) || strideList.size() > FALLBACK_MAX_LIST_SIZE) {
+                                strideList.removeLast();
+                            }
+
+                            lastSSStrideCountTimestamp = estTimestamp;
+                            lastStridePerMinute = strideCount;
+                            lock.release();
+                        } catch (InterruptedException e) {
+                            Log.e(TAG, "Unable to acquire lock to update running cadence", e);
+                        }
+                    }).start();
+                }
+
+                private long calculateStepsPerMin(long estTimestamp, long cumulativeStrides, Pair<Long, Long> p) {
+                    float elapsedTimeMs = estTimestamp - p.first;
+                    if (elapsedTimeMs == 0) {
+                        return 0;
+                    }
+                    return (long) ((cumulativeStrides - p.second) * (ONE_MINUTE_IN_MS / elapsedTimeMs));
+                }
+            });
+
+            ssPcc.subscribeDistanceEvent(new AntPlusStrideSdmPcc.IDistanceReceiver() {
+                @Override
+                public void onNewDistance(long estTimestamp, EnumSet<EventFlag> eventFlags, BigDecimal distance) {
+                    lastSSDistanceTimestamp = estTimestamp;
+                    lastSSDistance = distance.longValue();
+                }
+            });
+
+            ssPcc.subscribeInstantaneousSpeedEvent(new AntPlusStrideSdmPcc.IInstantaneousSpeedReceiver() {
+                @Override
+                public void onNewInstantaneousSpeed(long estTimestamp, EnumSet<EventFlag> eventFlags, BigDecimal instantaneousSpeed) {
+                    lastSSDistanceTimestamp = estTimestamp;
+                    lastSSSpeed = instantaneousSpeed.floatValue();
+                }
+            });
+        }
+    };
+
     private enum AntSensorType {
         CyclingSpeed,
         CyclingCadence,
-        HR
+        HR,
+        StrideBasedSpeedAndDistance
     }
 
     private class AntDeviceChangeReceiver implements AntPluginPcc.IDeviceStateChangeReceiver {
@@ -273,6 +379,9 @@ public class CSCService extends Service {
             } else if (type == AntSensorType.HR) {
                 extraName = "hr_service_status";
                 Log.d(TAG, "HR sensor onDeviceStateChange:" + newDeviceState);
+            } else if (type == AntSensorType.StrideBasedSpeedAndDistance) {
+                extraName = "ss_service_status";
+                Log.d(TAG, "Stride based speed and distance onDeviceStateChange:" + newDeviceState);
             }
             // send broadcast about device status
             Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
@@ -289,6 +398,7 @@ public class CSCService extends Service {
     private AntPluginPcc.IDeviceStateChangeReceiver mBSDDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.CyclingSpeed);
     private AntPluginPcc.IDeviceStateChangeReceiver mBCDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.CyclingCadence);
     private AntPluginPcc.IDeviceStateChangeReceiver mHRDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.HR);
+    private AntPluginPcc.IDeviceStateChangeReceiver mSSDeviceStateChangeReceiver = new AntDeviceChangeReceiver(AntSensorType.StrideBasedSpeedAndDistance);
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -432,6 +542,9 @@ public class CSCService extends Service {
             if (hrReleaseHandle != null)
                 hrReleaseHandle.close();
 
+            if (ssReleaseHandle != null)
+                ssReleaseHandle.close();
+
             combinedSensorConnected = false;
         }
     }
@@ -463,6 +576,7 @@ public class CSCService extends Service {
                 .setIncludeTxPowerLevel(true)
                 .addServiceUuid(new ParcelUuid(CSCProfile.CSC_SERVICE))
                 .addServiceUuid(new ParcelUuid(CSCProfile.HR_SERVICE))
+                .addServiceUuid(new ParcelUuid(CSCProfile.RSC_SERVICE))
                 .build();
 
         AdvertiseData advScanResponse = new AdvertiseData.Builder()
@@ -497,7 +611,7 @@ public class CSCService extends Service {
         if (mBluetoothGattServer.addService(CSCProfile.createCSCService((byte)(CSCProfile.CSC_FEATURE_WHEEL_REV | CSCProfile.CSC_FEATURE_CRANK_REV)))) {
             Log.d(TAG, "CSCP enabled!");
         } else {
-            Log.d(TAG, "Failed to add service to bluetooth layer!");
+            Log.d(TAG, "Failed to add csc service to bluetooth layer!");
         }
 
         // We cannot add another service until the callback for the previous service has completed
@@ -507,7 +621,16 @@ public class CSCService extends Service {
         if (mBluetoothGattServer.addService(CSCProfile.createHRService())) {
             Log.d(TAG, "HR enabled!");
         } else {
-            Log.d(TAG, "Failed to add service to bluetooth layer!");
+            Log.d(TAG, "Failed to add hr service to bluetooth layer!");
+        }
+
+        // We cannot add another service until the callback for the previous service has completed
+        while (!btServiceInitialized);
+
+        if (mBluetoothGattServer.addService(CSCProfile.createRscService())) {
+            Log.d(TAG, "RSC enabled!");
+        } else {
+            Log.d(TAG, "Failed to add rsc service to bluetooth layer");
         }
 
         Log.d(TAG, "Enumerating (" +  mBluetoothGattServer.getServices().size() + ") BT services");
@@ -561,10 +684,27 @@ public class CSCService extends Service {
             i.putExtra("speed", lastSpeed);
             i.putExtra("cadence", lastCadence);
             i.putExtra("hr", lastHR);
+            i.putExtra("ss_distance", lastSSDistance);
+            i.putExtra("ss_speed", lastSSSpeed);
+            i.putExtra("ss_stride_count", lastStridePerMinute);
             i.putExtra("speed_timestamp", lastSpeedTimestamp);
             i.putExtra("cadence_timestamp", lastCadenceTimestamp);
             i.putExtra("hr_timestamp", lastHRTimestamp);
-            Log.v(TAG, "Updating UI: speed:" + lastSpeed + ", cadence:" + lastCadence + ", hr " + lastHR +", speed_ts:" + lastSpeedTimestamp + ", cadence_ts:" + lastCadenceTimestamp + ", " + lastHRTimestamp);
+            i.putExtra("ss_distance_timestamp", lastSSDistanceTimestamp);
+            i.putExtra("ss_speed_timestamp", lastSSSpeedTimestamp);
+            i.putExtra("ss_stride_count_timestamp", lastSSStrideCountTimestamp);
+            Log.v(TAG, "Updating UI: speed:" + lastSpeed
+                    + ", cadence:" + lastCadence +
+                    ", hr " + lastHR +
+                    ", speed_ts:" + lastSpeedTimestamp +
+                    ", cadence_ts:" + lastCadenceTimestamp +
+                    ", " + lastHRTimestamp +
+                    ", ss_distance: " + lastSSDistance +
+                    ", ss_distance_timestamp: " + lastSSDistanceTimestamp +
+                    ", ss_speed: " + lastSSSpeed +
+                    ", ss_speed_timestamp: " + lastSSSpeedTimestamp +
+                    ", ss_stride_count: " + lastStridePerMinute +
+                    ", ss_stride_count_timestamp: " + lastSSStrideCountTimestamp);
             sendBroadcast(i);
         }
     };
@@ -614,10 +754,27 @@ public class CSCService extends Service {
             } else {
                 Log.v(TAG, "Service " + CSCProfile.HR_SERVICE + " was not found as an installed service");
             }
+
+            service = mBluetoothGattServer.getService(CSCProfile.RSC_SERVICE);
+            if (service != null) {
+                Log.v(TAG, "Processing Running Speed and Cadence sensor");
+
+                BluetoothGattCharacteristic measurementCharacteristic = mBluetoothGattServer
+                        .getService(CSCProfile.RSC_SERVICE)
+                        .getCharacteristic(CSCProfile.RSC_MEASUREMENT);
+
+                byte[] rscData = CSCProfile.getRsc(lastSSDistance, lastSSSpeed, lastStridePerMinute);
+                if (!measurementCharacteristic.setValue(rscData)) {
+                    Log.w(TAG, "RSC Measurement data isn't set properly!");
+                }
+                mBluetoothGattServer.notifyCharacteristicChanged(device, measurementCharacteristic, false);
+            } else {
+                Log.v(TAG, "Service " + CSCProfile.RSC_SERVICE + " was not found as an installed service");
+            }
         }
     }
 
-    private BluetoothGattServerCallback mGattServerCallback = new BluetoothGattServerCallback() {
+    private final BluetoothGattServerCallback mGattServerCallback = new BluetoothGattServerCallback() {
 
         @Override
         public void onServiceAdded(int status, BluetoothGattService service) {
@@ -667,6 +824,20 @@ public class CSCService extends Service {
                         BluetoothGatt.GATT_SUCCESS,
                         0,
                         CSCProfile.getFeature());
+            } else if (CSCProfile.RSC_MEASUREMENT.equals(characteristic.getUuid())) {
+                    Log.i(TAG, "READ RSC Measurement");
+                mBluetoothGattServer.sendResponse(device,
+                        requestId,
+                        BluetoothGatt.GATT_SUCCESS,
+                        0,
+                        null);
+            } else if (CSCProfile.RSC_FEATURE.equals(characteristic.getUuid())) {
+                Log.i(TAG, "READ RSC Feature");
+                mBluetoothGattServer.sendResponse(device,
+                        requestId,
+                        BluetoothGatt.GATT_SUCCESS,
+                        0,
+                        CSCProfile.getRscFeature());
             } else {
                 // Invalid characteristic
                 Log.w(TAG, "Invalid Characteristic Read: " + characteristic.getUuid());
@@ -747,6 +918,7 @@ public class CSCService extends Service {
         startSpeedSensorSearch();
         startCadenceSensorSearch();
         startHRSensorSearch();
+        startStrideSdmSensorSearch();
     }
 
     /**
@@ -802,6 +974,22 @@ public class CSCService extends Service {
         // send initial state for UI
         Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
         i.putExtra("hr_service_status", "SEARCHING");
+        sendBroadcast(i);
+    }
+
+    /**
+     * Initialized the Stride SDM (Stride based Speed and Distance Monitor) sensor search
+     *
+     * ex. Garmin Foot Pod
+     */
+    protected void startStrideSdmSensorSearch() {
+        if (ssReleaseHandle != null)
+            ssReleaseHandle.close();
+
+        ssReleaseHandle = AntPlusStrideSdmPcc.requestAccess(this, 0, 0,
+                mSSResultReceiver, mSSDeviceStateChangeReceiver);
+        Intent i = new Intent("idv.markkuo.cscblebridge.ANTDATA");
+        i.putExtra("ss_service_status", "SEARCHING");
         sendBroadcast(i);
     }
 
