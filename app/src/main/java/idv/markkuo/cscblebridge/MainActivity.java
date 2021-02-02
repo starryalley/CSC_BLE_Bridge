@@ -31,7 +31,6 @@ public class MainActivity extends AppCompatActivity  {
     private MainActivityReceiver receiver;
     private boolean mBound = false;
     private CSCService mService;
-    private Intent mServiceIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,8 +62,8 @@ public class MainActivity extends AppCompatActivity  {
         btn_service.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Intent mServiceIntent = new Intent(getApplicationContext(), CSCService.class);
                 if (!serviceStarted) {
-                    mServiceIntent = new Intent(getApplicationContext(), CSCService.class);
                     Log.d(TAG, "Starting Service");
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                         MainActivity.this.startForegroundService(mServiceIntent);
@@ -83,7 +82,6 @@ public class MainActivity extends AppCompatActivity  {
                     unbindService();
                     MainActivity.this.stopService(mServiceIntent);
                 }
-
 
                 serviceStarted = !serviceStarted;
                 updateButtonState();
