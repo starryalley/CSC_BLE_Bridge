@@ -160,7 +160,6 @@ public class MainActivity extends AppCompatActivity  {
         super.onResume();
         Log.d(TAG, "onResume(): service was " + (serviceStarted ? "started" : "stopped"));
         serviceStarted = isServiceRunning();
-        updateButtonState();
     }
 
     // Unbind from the service
@@ -177,6 +176,28 @@ public class MainActivity extends AppCompatActivity  {
 
         unregisterReceiver(receiver);
         unbindService();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putString("bsc_state", tv_speedSensorState.getText().toString());
+        outState.putString("bc_state", tv_cadenceSensorState.getText().toString());
+        outState.putString("hr_state", tv_hrSensorState.getText().toString());
+        outState.putString("rsc_state", tv_runSensorState.getText().toString());
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        //resetUi();
+        if (serviceStarted)
+            btn_service.setText(getText(R.string.stop_service));
+        else
+            btn_service.setText(getText(R.string.start_service));
+        tv_speedSensorState.setText(savedInstanceState.getString("bsc_state"));
+        tv_cadenceSensorState.setText(savedInstanceState.getString("bc_state"));
+        tv_hrSensorState.setText(savedInstanceState.getString("hr_state"));
+        tv_runSensorState.setText(savedInstanceState.getString("rsc_state"));
     }
 
     private void resetUi() {
