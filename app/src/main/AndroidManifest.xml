@@ -13,19 +13,17 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="true"
         android:launchMode="singleTop"
         android:theme="@style/AppTheme">
-        <activity android:name="idv.markkuo.cscblebridge.MainActivity">
+        <activity android:name="idv.markkuo.cscblebridge.LaunchActivity" android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name="idv.markkuo.cscblebridge.CSCService"
+        <service android:name="idv.markkuo.cscblebridge.service.MainService"
             android:stopWithTask="false"
-            android:label="CSCService">
-        </service>
+            android:label="Ant to BLE Bridge"/>
     </application>
 
 </manifest>
