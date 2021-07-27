@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/broadcast_button_broadcast"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/broadcast"
+        android:paddingEnd="@dimen/broadcast_button_start_end"
+        android:paddingStart="@dimen/broadcast_button_start_end"
+        android:background="@color/colorAccent"
+        android:textColor="@android:color/white"
+        style="@style/Widget.AppCompat.Button"/>
+
+    <ImageView
+        android:id="@+id/bluetooth"
+        android:layout_width="wrap_content"
+        android:visibility="gone"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_baseline_bluetooth_24"
+        android:contentDescription="@string/bluetooth_connected" />
+</FrameLayout>

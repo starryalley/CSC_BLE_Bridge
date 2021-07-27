@@ -13,4 +13,9 @@
     <string name="heart_rate">Heart rate (bpm)</string>
     <string name="run_speed">Run Speed (km/h)</string>
     <string name="run_cadence">Run Cadence (spm)</string>
+    <string name="bluetooth_connected">Bluetooth connected</string>
+    <string name="broadcast">Broadcast</string>
+    <string name="example_80_bpm">80 bpm</string>
+    <string name="example_ant_hr">Ant+ Heart Rate</string>
+    <string name="example_device_id">1234</string>
 </resources>
