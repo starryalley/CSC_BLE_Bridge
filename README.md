@@ -4,7 +4,11 @@
 This is an Ant+ to BLE (Bluetooth Low Energy) Bridging app for ANT+ Cycling Speed and Cadence (CSC) sensors, ANT+ heart rate sensors, and ANT+ Stride based speed and distance sensors.
 The app will act as a Cycling speed/cadence and/or HR BLE sensor and/or BLE Running speed/cadence so other BLE device (phone, PC, Mac, tablet) can reads data from ANT+ sensors.
 
-![Screenshot](screenshots/screenshot_3.jpg)
+
+
+V1.3 screenshot             |  pre V1.3 screenshot (old original version)
+:-------------------------:|:-------------------------:
+![Screenshot v1.3](screenshots/screenshot_v1.3.jpg)  |  ![Screenshot](screenshots/screenshot_3.jpg)
 
 # Install
 
