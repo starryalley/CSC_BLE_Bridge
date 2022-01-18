@@ -14,7 +14,7 @@ class BcConnector(context: Context, listener: DeviceManagerListener<AntDevice.Bc
     override fun subscribeToEvents(pcc: AntPlusBikeCadencePcc) {
         pcc.subscribeCalculatedCadenceEvent { estTimestamp, eventFlags, calculatedCadence ->
             val device = getDevice(pcc)
-            device.cadence = calculatedCadence.intValueExact()
+            device.cadence = calculatedCadence.toInt()
             listener.onDataUpdated(device)
         }
 
