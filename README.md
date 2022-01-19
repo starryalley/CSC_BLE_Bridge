@@ -45,6 +45,7 @@ Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart R
 - Nexus 5 (CyanogenMod 13 and Ant+ Enabler) - Thanks [leaskovski](https://github.com/leaskovski)
 - OnePlus 5T (Android 10) - Thanks [philharle](https://github.com/philharle)
 - Galaxy Note 9 - Thanks [larryb84](https://github.com/larryb84)
+- Samsung Galaxy S10 (Android 11) - Thanks [Chris](https://github.com/CS-Biker)
 
 ## ANT+ Speed/Cadence sensors
 - [Garmin gen 1 ANT+ only speed and cadence sensor](https://buy.garmin.com/en-MW/ssa/p/146897)
@@ -57,6 +58,8 @@ Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart R
 - Garmin 935 with broadcasting mode on (ANT+ signal)
 - Garmin Fenix 6 with broadcasting mode on (ANT+ signal) 
 - Garmin HRM2 - Thanks [larryb84](https://github.com/larryb84)
+- Garmin Fenix 5 with broadcasting mode on (ANT+ signal) - Thanks [Chris](https://github.com/CS-Biker)
+- Garmin HRM Tri - Thanks [Chris](https://github.com/CS-Biker)
 
 ## ANT+ Stride-based Speed and Distance Monitor (SDM) sensors
 - Garmin Foot Pod
