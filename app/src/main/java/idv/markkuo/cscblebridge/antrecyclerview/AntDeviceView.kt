@@ -9,7 +9,6 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import idv.markkuo.cscblebridge.R
 import idv.markkuo.cscblebridge.service.ant.AntDevice
-import org.w3c.dom.Text
 
 class AntDeviceView @JvmOverloads constructor(
         context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0

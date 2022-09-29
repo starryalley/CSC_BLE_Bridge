@@ -33,14 +33,14 @@ sealed class BleServiceType(val serviceId: UUID, val measurement: UUID, val feat
 
         private var currentFeature = CSC_FEATURE_WHEEL_REV or CSC_FEATURE_CRANK_REV
 
-        override fun getSupportedFeatures(): ByteArray? {
+        override fun getSupportedFeatures(): ByteArray {
             val data = ByteArray(2)
             // always leave the second byte 0
             data[0] = currentFeature
             return data
         }
 
-        override fun getBleData(antDevices: List<AntDevice>): ByteArray? {
+        override fun getBleData(antDevices: List<AntDevice>): ByteArray {
             if (antDevices.size > 2 || antDevices.isEmpty()) {
                 throw IllegalArgumentException("2 ANT+ devices (speed vs cadence) can be paired, Or 1 ANT+ device. But found ${antDevices.size}")
             }
@@ -110,7 +110,7 @@ sealed class BleServiceType(val serviceId: UUID, val measurement: UUID, val feat
             return null
         }
 
-        override fun getBleData(antDevices: List<AntDevice>): ByteArray? {
+        override fun getBleData(antDevices: List<AntDevice>): ByteArray {
             if (antDevices.size > 1 || antDevices.isEmpty()) {
                 throw IllegalArgumentException("Only one HR ANT+ device can be selected at a time")
             }
@@ -141,14 +141,14 @@ sealed class BleServiceType(val serviceId: UUID, val measurement: UUID, val feat
             UUID.fromString("00002A54-0000-1000-8000-00805f9b34fb")
     ) {
         private const val RSC_NO_FEATURES: Byte = 0
-        override fun getSupportedFeatures(): ByteArray? {
+        override fun getSupportedFeatures(): ByteArray {
             val data = ByteArray(1)
             data[0] = RSC_NO_FEATURES
             return data
         }
 
         // https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.rsc_measurement.xml
-        override fun getBleData(antDevices: List<AntDevice>): ByteArray? {
+        override fun getBleData(antDevices: List<AntDevice>): ByteArray {
             if (antDevices.size > 1 || antDevices.isEmpty()) {
                 throw IllegalArgumentException("Only one HR ANT+ device can be selected at a time, found ${antDevices.size}")
             }
@@ -158,7 +158,7 @@ sealed class BleServiceType(val serviceId: UUID, val measurement: UUID, val feat
             }
 
             val data: MutableList<Byte> = ArrayList()
-            // Instantanious stride length, total distance and walking or running could be calculated, but are not supported for now
+            // Instantaneous stride length, total distance and walking or running could be calculated, but are not supported for now
             data.add(0.toByte())
 
             // Instantaneous Speed; Unit is in m/s with a resolution of 1/256 s (uint16)
@@ -167,7 +167,7 @@ sealed class BleServiceType(val serviceId: UUID, val measurement: UUID, val feat
             data.add(decimalPlaces)
             data.add(wholeNumber.toByte())
 
-            // Instantanious Cadence, Unit is in 1/minute (or RPM) with a resolutions of 1 1/min (or 1 RPM) (uint8)
+            // Instantaneous Cadence, Unit is in 1/minute (or RPM) with a resolutions of 1 1/min (or 1 RPM) (uint8)
             data.add(antDevice.stridePerMinute.toByte())
 
             // convert to primitive byte array
@@ -197,5 +197,5 @@ sealed class BleServiceType(val serviceId: UUID, val measurement: UUID, val feat
     }
 
     abstract fun getSupportedFeatures(): ByteArray?
-    abstract fun getBleData(antDevice: List<AntDevice>): ByteArray?
+    abstract fun getBleData(antDevices: List<AntDevice>): ByteArray?
 }

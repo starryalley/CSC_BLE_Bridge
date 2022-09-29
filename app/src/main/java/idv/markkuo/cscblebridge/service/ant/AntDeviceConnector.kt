@@ -26,7 +26,7 @@ abstract class AntDeviceConnector<T: AntPluginPcc, Data: AntDevice>(private val 
     private var releaseHandle: PccReleaseHandle<T>? = null
 
     private var deviceStateChangedReceiver: IDeviceStateChangeReceiver = IDeviceStateChangeReceiver {
-        Log.d("Test", "Device State Changed ${it.name}")
+        Log.d(TAG, "Device State Changed ${it.name}")
     }
 
     private val resultReceiver = AntPluginPcc.IPluginAccessResultReceiver {

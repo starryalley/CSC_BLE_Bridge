@@ -7,18 +7,18 @@ import com.dsi.ant.plugins.antplus.pccbase.PccReleaseHandle
 
 
 class BcConnector(context: Context, listener: DeviceManagerListener<AntDevice.BcDevice>, val isCombinedSensor: Boolean = false): AntDeviceConnector<AntPlusBikeCadencePcc, AntDevice.BcDevice>(context, listener) {
-    override fun requestAccess(context: Context, resultReceiver: AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeCadencePcc>, deviceStateChanged: AntPluginPcc.IDeviceStateChangeReceiver, deviceNumber: Int): PccReleaseHandle<AntPlusBikeCadencePcc> {
-        return AntPlusBikeCadencePcc.requestAccess(context, deviceNumber, 0, false, resultReceiver, deviceStateChanged)
+    override fun requestAccess(context: Context, resultReceiver: AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeCadencePcc>, stateChangedReceiver: AntPluginPcc.IDeviceStateChangeReceiver, deviceNumber: Int): PccReleaseHandle<AntPlusBikeCadencePcc> {
+        return AntPlusBikeCadencePcc.requestAccess(context, deviceNumber, 0, false, resultReceiver, stateChangedReceiver)
     }
 
     override fun subscribeToEvents(pcc: AntPlusBikeCadencePcc) {
-        pcc.subscribeCalculatedCadenceEvent { estTimestamp, eventFlags, calculatedCadence ->
+        pcc.subscribeCalculatedCadenceEvent { _, _, calculatedCadence ->
             val device = getDevice(pcc)
             device.cadence = calculatedCadence.toInt()
             listener.onDataUpdated(device)
         }
 
-        pcc.subscribeRawCadenceDataEvent { estTimestamp, eventFlags, timestampOfLastEvent, cumulativeRevolutions ->
+        pcc.subscribeRawCadenceDataEvent { estTimestamp, _, timestampOfLastEvent, cumulativeRevolutions ->
             val device = getDevice(pcc)
             device.cumulativeCrankRevolution = cumulativeRevolutions
             device.crankEventTime = (timestampOfLastEvent.toDouble() * 1024.0).toLong()

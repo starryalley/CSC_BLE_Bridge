@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import com.dsi.ant.plugins.antplus.pcc.AntPlusBikeSpeedDistancePcc
 import com.dsi.ant.plugins.antplus.pcc.AntPlusBikeSpeedDistancePcc.CalculatedSpeedReceiver
-import com.dsi.ant.plugins.antplus.pcc.defines.DeviceState
 import com.dsi.ant.plugins.antplus.pcc.defines.EventFlag
 import com.dsi.ant.plugins.antplus.pccbase.AntPluginPcc
 import com.dsi.ant.plugins.antplus.pccbase.PccReleaseHandle
@@ -21,9 +20,9 @@ class BsdConnector(context: Context, listener: DeviceManagerListener<AntDevice.B
 
     override fun requestAccess(context: Context,
                                resultReceiver: AntPluginPcc.IPluginAccessResultReceiver<AntPlusBikeSpeedDistancePcc>,
-                               deviceStateChanged: AntPluginPcc.IDeviceStateChangeReceiver,
+                               stateChangedReceiver: AntPluginPcc.IDeviceStateChangeReceiver,
                                deviceNumber: Int): PccReleaseHandle<AntPlusBikeSpeedDistancePcc> {
-        return AntPlusBikeSpeedDistancePcc.requestAccess(context, deviceNumber, 0, false, resultReceiver, deviceStateChanged)
+        return AntPlusBikeSpeedDistancePcc.requestAccess(context, deviceNumber, 0, false, resultReceiver, stateChangedReceiver)
     }
 
     override fun subscribeToEvents(pcc: AntPlusBikeSpeedDistancePcc) {

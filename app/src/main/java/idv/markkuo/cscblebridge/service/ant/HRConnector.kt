@@ -2,7 +2,6 @@ package idv.markkuo.cscblebridge.service.ant
 
 import android.content.Context
 import com.dsi.ant.plugins.antplus.pcc.AntPlusHeartRatePcc
-import com.dsi.ant.plugins.antplus.pcc.AntPlusHeartRatePcc.IHeartRateDataReceiver
 import com.dsi.ant.plugins.antplus.pccbase.AntPluginPcc
 import com.dsi.ant.plugins.antplus.pccbase.PccReleaseHandle
 
@@ -12,12 +11,12 @@ class HRConnector(context: Context, listener: DeviceManagerListener<AntDevice.HR
     }
 
     override fun subscribeToEvents(pcc: AntPlusHeartRatePcc) {
-        pcc.subscribeHeartRateDataEvent(IHeartRateDataReceiver { estTimestamp, _, computedHeartRate, heartBeatCount, heartBeatEventTime, dataState ->
+        pcc.subscribeHeartRateDataEvent { estTimestamp, _, computedHeartRate, _, _, _ ->
             val device = getDevice(pcc)
             device.hr = computedHeartRate
             device.hrTimestamp = estTimestamp
             listener.onDataUpdated(device)
-        })
+        }
     }
 
     override fun init(deviceNumber: Int, deviceName: String): AntDevice.HRDevice {

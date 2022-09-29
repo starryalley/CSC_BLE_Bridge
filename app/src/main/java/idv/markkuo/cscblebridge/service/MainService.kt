@@ -58,7 +58,7 @@ class MainService : Service() {
 
     private val binder: IBinder = LocalBinder()
 
-    override fun onBind(intent: Intent?): IBinder? {
+    override fun onBind(intent: Intent?): IBinder {
         return binder
     }
 
@@ -93,7 +93,7 @@ class MainService : Service() {
                     this,
                     0,
                     Intent(this.applicationContext, LaunchActivity::class.java),
-                    PendingIntent.FLAG_UPDATE_CURRENT)
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
             // build a notification
             val notification: Notification = NotificationCompat.Builder(this, CHANNEL_DEFAULT_IMPORTANCE)

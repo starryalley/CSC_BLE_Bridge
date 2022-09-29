@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="idv.markkuo.cscblebridge">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.BLUETOOTH"/>
@@ -19,7 +20,8 @@
         android:supportsRtl="true"
         android:launchMode="singleTop"
         android:theme="@style/AppTheme">
-        <activity android:name="idv.markkuo.cscblebridge.LaunchActivity" android:launchMode="singleInstance">
+        <activity android:name="idv.markkuo.cscblebridge.LaunchActivity" android:launchMode="singleInstance"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

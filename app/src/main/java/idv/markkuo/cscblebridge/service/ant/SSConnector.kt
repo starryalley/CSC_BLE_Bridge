@@ -3,7 +3,6 @@ package idv.markkuo.cscblebridge.service.ant
 import android.content.Context
 import android.util.Log
 import android.util.Pair
-import com.dsi.ant.plugins.antplus.pcc.AntPlusHeartRatePcc
 import com.dsi.ant.plugins.antplus.pcc.AntPlusStrideSdmPcc
 import com.dsi.ant.plugins.antplus.pcc.AntPlusStrideSdmPcc.*
 import com.dsi.ant.plugins.antplus.pcc.defines.EventFlag
