@@ -101,16 +101,15 @@ class BleServer {
     }
 
     fun notifyRegisteredDevices() {
-        Log.i(TAG, "Notifying registered devices ${registeredDevices.size}")
+        Log.i(TAG, "Notifying ${registeredDevices.size} registered devices")
         registeredDevices.forEach { device ->
-            Log.i(TAG, "Notifying ${device.name}")
             BleServiceType.serviceTypes.forEach { bleService ->
                 val service = server?.getService(bleService.serviceId)
                 if (service != null) {
-                    Log.i(TAG, "Notifying ${device.name} for ${service.uuid}")
                     val antDevices = antData[bleService]
                     val selectedAntDevices = antDevices?.filter { selectedDevices[bleService]?.contains(it.deviceId) ?: false }
                     if (selectedAntDevices != null && selectedAntDevices.isNotEmpty()) {
+                        Log.i(TAG, "Notifying ${device.address}(Name:${device.name}) for service ${service.uuid}")
                         val data = bleService.getBleData(selectedAntDevices)
                         val measurementCharacteristic: BluetoothGattCharacteristic = service
                                 .getCharacteristic(bleService.measurement)
@@ -120,7 +119,7 @@ class BleServer {
                         // false is used to send a notification
                         server?.notifyCharacteristicChanged(device, measurementCharacteristic, false)
                     } else {
-                        Log.i(TAG, "Not notifying anything, ant device was null")
+                        Log.v(TAG, "Not notifying anything for service ${service.uuid}: no ANT+ device")
                     }
                 } else {
                     Log.v(TAG, "Service ${bleService.serviceId} was not found as an installed service")
@@ -189,7 +188,7 @@ class BleServer {
         return !(bluetoothAdapter == null || !packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE))
     }
 
-    fun createService(type: BleServiceType) {
+    private fun createService(type: BleServiceType) {
         BluetoothGattService(type.serviceId, BluetoothGattService.SERVICE_TYPE_PRIMARY).also {
             val measurement = BluetoothGattCharacteristic(type.measurement,
                     BluetoothGattCharacteristic.PROPERTY_NOTIFY,
@@ -243,7 +242,7 @@ class BleServer {
         }
 
         override fun onNotificationSent(device: BluetoothDevice, status: Int) {
-            Log.v(TAG, "onNotificationSent() result:$status")
+            Log.v(TAG, "onNotificationSent() device: ${device.name} result:$status")
         }
 
         override fun onMtuChanged(device: BluetoothDevice, mtu: Int) {
