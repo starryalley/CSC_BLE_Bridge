@@ -3,13 +3,20 @@
 
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"/>
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
 
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+
     <queries>
         <package android:name="com.dsi.ant.plugins.antplus" />
+        <package android:name="com.dsi.ant.service.socket" />
+        <package android:name="com.dsi.ant.usbservice" />
     </queries>
 
     <application
@@ -29,7 +36,8 @@
         </activity>
         <service android:name="idv.markkuo.cscblebridge.service.MainService"
             android:stopWithTask="false"
-            android:label="Ant to BLE Bridge"/>
+            android:label="Ant to BLE Bridge"
+            android:foregroundServiceType="connectedDevice" />
     </application>
 
 </manifest>

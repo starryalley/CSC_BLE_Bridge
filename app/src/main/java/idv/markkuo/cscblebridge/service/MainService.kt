@@ -3,6 +3,7 @@ package idv.markkuo.cscblebridge.service
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.os.Binder
 import android.os.Build
@@ -82,7 +83,7 @@ class MainService : Service() {
     private fun startServiceInForeground() {
         val intent = Intent(this, MainService::class.java)
         intent.action = STOP_SELF_ACTION
-        val stopPendingIntent = PendingIntent.getService(this, 0, intent, 0)
+        val stopPendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
         val stopAction = NotificationCompat.Action(R.drawable.ic_baseline_stop_24, "Stop", stopPendingIntent)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -105,7 +106,11 @@ class MainService : Service() {
                     .addAction(stopAction)
                     .setTicker(getText(R.string.app_name))
                     .build()
-            startForeground(ONGOING_NOTIFICATION_ID, notification)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(ONGOING_NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+            } else {
+                startForeground(ONGOING_NOTIFICATION_ID, notification)
+            }
         } else {
             val notification: Notification = NotificationCompat.Builder(this, CHANNEL_DEFAULT_IMPORTANCE)
                     .setContentTitle(getString(R.string.app_name))

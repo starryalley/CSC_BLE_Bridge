@@ -1,11 +1,16 @@
 package idv.markkuo.cscblebridge
 
+import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import idv.markkuo.cscblebridge.service.MainService
 import idv.markkuo.cscblebridge.service.ant.AntDevice
 import idv.markkuo.cscblebridge.service.ble.BleServiceType
@@ -18,14 +23,50 @@ class LaunchActivity: AppCompatActivity(), MainFragment.ServiceStarter, MainServ
     private var mService: MainService? = null
     private var serviceIntent: Intent? = null
 
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.all { it.value }) {
+            startService()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_launch)
+
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, MainFragment())
+                .commit()
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        startService()
+        checkPermissionsAndStart()
+    }
+
+    private fun checkPermissionsAndStart() {
+        val permissions = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            permissions.add(Manifest.permission.BLUETOOTH_SCAN)
+            permissions.add(Manifest.permission.BLUETOOTH_ADVERTISE)
+            permissions.add(Manifest.permission.BLUETOOTH_CONNECT)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
+        val missingPermissions = permissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (missingPermissions.isEmpty()) {
+            startService()
+        } else {
+            requestPermissionLauncher.launch(missingPermissions.toTypedArray())
+        }
     }
 
     override fun onStop() {
@@ -49,9 +90,10 @@ class LaunchActivity: AppCompatActivity(), MainFragment.ServiceStarter, MainServ
     }
 
     override fun startService() {
-        serviceIntent = Intent(this, MainService::class.java)
-        startService(serviceIntent)
-        bindService(serviceIntent, connection, 0)
+        val intent = Intent(this, MainService::class.java)
+        serviceIntent = intent
+        ContextCompat.startForegroundService(this, intent)
+        bindService(intent, connection, 0)
     }
 
     override fun stopService() {
@@ -59,7 +101,7 @@ class LaunchActivity: AppCompatActivity(), MainFragment.ServiceStarter, MainServ
             withContext(Dispatchers.IO) {
                 mService?.stopSearching()
                 unbind()
-                stopService(serviceIntent)
+                serviceIntent?.let { stopService(it) }
             }
         }
     }
@@ -87,5 +129,5 @@ class LaunchActivity: AppCompatActivity(), MainFragment.ServiceStarter, MainServ
     }
 
     private fun mainFragment() =
-            supportFragmentManager.findFragmentById(R.id.main_fragment) as MainFragment?
+            supportFragmentManager.findFragmentById(R.id.fragment_container) as MainFragment?
 }

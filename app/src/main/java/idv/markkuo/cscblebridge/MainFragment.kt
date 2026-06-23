@@ -25,8 +25,7 @@ class MainFragment: Fragment() {
     private lateinit var searchButton: Button
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        super.onCreateView(inflater, container, savedInstanceState)
-        val view = inflater.inflate(R.layout.fragment_main, container)
+        val view = inflater.inflate(R.layout.fragment_main, container, false)
 
         searchButton = view.findViewById(R.id.searchButton)
         searchButton.setOnClickListener {
