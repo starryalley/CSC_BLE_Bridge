@@ -4,6 +4,8 @@
 This is an Ant+ to BLE (Bluetooth Low Energy) Bridging app for ANT+ Cycling Speed and Cadence (CSC) sensors, ANT+ heart rate sensors, and ANT+ Stride based speed and distance sensors.
 The app will act as a Cycling speed/cadence and/or HR BLE sensor and/or BLE Running speed/cadence so other BLE device (phone, PC, Mac, tablet) can reads data from ANT+ sensors.
 
+You will need a ANT+ USB stick on non-ANT+ android devices, or a ANT+ enabled android devices.
+
 
 
 V1.3 screenshot             |  pre V1.3 screenshot (old original version)
@@ -47,6 +49,9 @@ Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart R
 - Galaxy Note 9 - Thanks [larryb84](https://github.com/larryb84)
 - Samsung Galaxy S10 (Android 11) - Thanks [Chris](https://github.com/CS-Biker)
 
+## BLE enabled Android devices with ANT+ USB stick
+- Google Pixel 8 Pro (Android 17)
+
 ## ANT+ Speed/Cadence sensors
 - [Garmin gen 1 ANT+ only speed and cadence sensor](https://buy.garmin.com/en-MW/ssa/p/146897)
 - [Garmin speed cadence combined sensor](https://www.thisisant.com/directory/gsc-10-speed-cadence-bike-sensor) - Thanks [louisJ20](https://github.com/louisJ20)
@@ -60,6 +65,7 @@ Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart R
 - Garmin HRM2 - Thanks [larryb84](https://github.com/larryb84)
 - Garmin Fenix 5 with broadcasting mode on (ANT+ signal) - Thanks [Chris](https://github.com/CS-Biker)
 - Garmin HRM Tri - Thanks [Chris](https://github.com/CS-Biker)
+- Coospo H808S (dual ANT+/BLE) - which doesn't require this app but I've tested it.
 
 ## ANT+ Stride-based Speed and Distance Monitor (SDM) sensors
 - Garmin Foot Pod
@@ -68,6 +74,7 @@ Special thanks to [pinkemma](https://github.com/pinkemma) who implements Heart R
 - Zwift (Mac/iPad/Windows version)
 - The Sufferfest (Mac version)
 - Zwift (iPad Pro)
+- MyWhoosh (Mac version)
 - theoretically all other apps that use Bike Speed/Cadence or Heart Rate or Run Speed/Cadence BLE sensors
 
 
